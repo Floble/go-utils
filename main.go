@@ -33,4 +33,18 @@ func main() {
 	fmt.Println("Tree after Deletion:")
 	bst.Delete(nodes[3])
 	bst.Print(bst.Root)
+
+	test4 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	stack := datastructs.NewStack()
+	for _, e := range test4 {
+		stack.Push(e)
+	}
+	fmt.Println("Stack:")
+	for i := 0; i < 5; i++ {
+		err, e := stack.Pop()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(e)
+	}
 }
