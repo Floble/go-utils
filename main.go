@@ -47,4 +47,18 @@ func main() {
 		}
 		fmt.Println(e)
 	}
+
+	test5 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	queue := datastructs.NewQueue()
+	for _, e := range test5 {
+		queue.Enqueue(e)
+	}
+	fmt.Println("Queue:")
+	for i := 0; i < 5; i++ {
+		err, e := queue.Dequeue()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(e)
+	}
 }
