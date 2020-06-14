@@ -25,8 +25,13 @@ func (stack *Stack) IsEmpty() bool {
 }
 
 func (stack *Stack) Push(e int) {
-	stack.Array = append(stack.Array, e)
-	stack.Top++
+	if stack.Top < len(stack.Array) {
+		stack.Array[stack.Top] = e
+		stack.Top++
+	} else {
+		stack.Array = append(stack.Array, e)
+		stack.Top = len(stack.Array)
+	}
 }
 
 func (stack *Stack) Pop() (error, int) {
