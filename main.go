@@ -61,4 +61,13 @@ func main() {
 		}
 		fmt.Println(e)
 	}
+
+	test6 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	list := datastructs.NewLinkedList()
+	for _, e := range test6 {
+		list.Insert(e)
+	}
+	list.Delete(8)
+	fmt.Println("LinkedList:")
+	list.Print()
 }
