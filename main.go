@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	sorting "go-util/algorithms/sorting"
+	string_matching "go-util/algorithms/string_matching"
 	datastructs "go-util/datastructures"
 )
 
@@ -70,4 +71,12 @@ func main() {
 	list.Delete(8)
 	fmt.Println("LinkedList:")
 	list.Print()
+
+	s := "adsgwadsxdsgwadsgz"
+	p := "dsgwadsgz"
+	fmt.Println("HFSDFSDFSDAFSFSFSFSF")
+	kmp := string_matching.NewKMP()
+	shifts := kmp.Match(s, p)
+	fmt.Println("Knuth-Morris-Pratt:")
+	fmt.Println(shifts)
 }
