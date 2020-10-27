@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	sorting "go-util/algorithms/sorting"
-	string_matching "go-util/algorithms/string_matching"
-	datastructs "go-util/datastructures"
+	//sorting "go-utils/algorithms/sorting"
+	//string_matching "go-utils/algorithms/string_matching"
+	//datastructs "go-utils/datastructures"
+	architecture "go-utils/algorithms/architecture"
 )
 
 func main() {
-	test1 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	/* test1 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	insertionSort := sorting.NewInsertionSort()
 	result1 := insertionSort.Sort(test1)
 	fmt.Println("InsertionSort:")
@@ -78,5 +79,26 @@ func main() {
 	kmp := string_matching.NewKMP()
 	shifts := kmp.Match(s, p)
 	fmt.Println("Knuth-Morris-Pratt:")
-	fmt.Println(shifts)
+	fmt.Println(shifts) */
+
+	yuma := architecture.NewYuma("/home/floble/yuma-test/roles/")
+
+	for role, config := range yuma.Roles {
+		fmt.Printf("%s", role)
+		fmt.Printf(" - ")
+		fmt.Printf("%b", config)
+		fmt.Println()
+	}
+
+	fmt.Println()
+	fmt.Println()
+
+	yuma.Dfs(0, 1)
+
+	for i := 1; i < len(yuma.States); i++ {
+		fmt.Printf("%d", i)
+		fmt.Printf(" - ")
+		fmt.Printf("%b", yuma.States[i])
+		fmt.Println()
+	}
 }
