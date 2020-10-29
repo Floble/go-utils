@@ -55,16 +55,6 @@ func (yuma *Yuma) Dfs(mask uint8, depth int) bool {
 			mask |= config
 			yuma.States[depth] = mask
 
-			fmt.Println(role)
-
-			/* fmt.Printf("Mask: ")
-			fmt.Printf("%b", mask)
-			fmt.Println()
-			fmt.Printf("Detph: ")
-			fmt.Printf("%d", depth)
-			fmt.Println()
-			fmt.Println() */
-
 			if yuma.Dfs(mask, depth + 1) {
 				return true
 			}
@@ -114,7 +104,7 @@ func (yuma *Yuma) playRole(role string) bool {
 		return false
 	}
 
-	cmd := exec.Command("ansible-playbook", "-i", "/home/floble/yuma-test/hosts", "/home/floble/yuma-test/build.yml", "-vvv")
+	cmd := exec.Command("ansible-playbook", "-i", "/home/floble/yuma-test/hosts", "/home/floble/yuma-test/build.yml")
   
 	out, err := cmd.StdoutPipe()
 	if err != nil {
