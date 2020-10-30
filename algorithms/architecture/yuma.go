@@ -2,6 +2,7 @@ package architecture
 
 import (
 	"fmt"
+	"strconv"
 	"io/ioutil"
 	"math"
 	"os"
@@ -11,16 +12,18 @@ import (
 
 type Yuma struct {
 	Roles map[string]uint8
-	States []uint8
+	Configurations map[uint8]string
+	DeploymentPlan []uint8
 }
 
 func NewYuma(path string) *Yuma {
 	yuma := new(Yuma)
 	yuma.Roles = make(map[string]uint8, 0)
+	yuma.Configurations = make(map[uint8]string, 0)
 	if err := yuma.identifyRoles(path); err != nil {
 		return nil
 	}
-	yuma.States = make([]uint8, len(yuma.Roles) + 1)
+	yuma.DeploymentPlan = make([]uint8, len(yuma.Roles) + 1)
 
 	return yuma
 }
@@ -35,12 +38,13 @@ func (yuma *Yuma) identifyRoles(path string) error {
 		var config uint8 = 0
 		config |= uint8(math.Exp2(float64(i)))
 		yuma.Roles[roles[i].Name()] = config
+		yuma.Configurations[config] = roles[i].Name()
 	}
 	
 	return nil
 }
 
-func (yuma *Yuma) Dfs(mask uint8, depth int) bool {
+func (yuma *Yuma) DetermineDeploymentPlan(mask uint8, depth int) bool {
 	if mask == uint8(math.Exp2(float64(len(yuma.Roles)))) - 1 {
 		return true
 	}
@@ -53,9 +57,9 @@ func (yuma *Yuma) Dfs(mask uint8, depth int) bool {
 		if yuma.playRole(role) {
 			deletePlaybook()
 			mask |= config
-			yuma.States[depth] = mask
+			yuma.DeploymentPlan[depth] = mask
 
-			if yuma.Dfs(mask, depth + 1) {
+			if yuma.DetermineDeploymentPlan(mask, depth + 1) {
 				return true
 			}
 		} else {
@@ -64,6 +68,13 @@ func (yuma *Yuma) Dfs(mask uint8, depth int) bool {
 	}
 
 	return false
+}
+
+func (yuma *Yuma) PrintDeploymentPlan() {
+	for i := 1; i < len(yuma.DeploymentPlan); i++ {
+		config := yuma.DeploymentPlan[i - 1] ^ yuma.DeploymentPlan[i]
+		fmt.Println(strconv.Itoa(i) + " - " + yuma.Configurations[config])
+	}
 }
 
 func createPlaybook(role string) error {

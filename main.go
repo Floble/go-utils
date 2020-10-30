@@ -93,12 +93,17 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 
-	yuma.Dfs(0, 1)
+	yuma.DetermineDeploymentPlan(0, 1)
 
-	for i := 1; i < len(yuma.States); i++ {
+	for i := 1; i < len(yuma.DeploymentPlan); i++ {
 		fmt.Printf("%d", i)
 		fmt.Printf(" - ")
-		fmt.Printf("%b", yuma.States[i])
+		fmt.Printf("%b", yuma.DeploymentPlan[i])
 		fmt.Println()
 	}
+
+	fmt.Println()
+	fmt.Println()
+
+	yuma.PrintDeploymentPlan()
 }
