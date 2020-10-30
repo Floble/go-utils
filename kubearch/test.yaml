@@ -1,0 +1,250 @@
+AmazonWebServices:
+  profile: "default"
+  region: "eu-central-1"
+  VirtualPrivateCloud:
+  - id: "kubernetes-vpc"
+    cidr: "172.31.0.0/16"
+    IPv4Cidr:
+    - id: "kubernetes-vpc-secondary-cidr"
+      cidr: "172.32.0.0/16"
+    InternetGateway:
+      id: "kubernetes-igw"
+    Kubernetes:
+      id: "test-cluster"
+      domain: "test-cluster.local"
+      port: 6443
+      cidr_pod: "10.100.0.1/24"
+      cidr_service: "10.96.0.0/12"
+      ContainerNetworkInterface:
+        id: "calico"
+      Subnet:
+      - id: "public-frontend"
+        availability_zone: "eu-central-1a"
+        cidr: "172.31.16.0/24"
+        public: yes
+        NatGateway:
+          - id: "kubernetes-ngw"
+        RouteTable:
+        - id: "kubernetes-rtb-public"
+          Route:
+          - id: "access-all-route"
+            cidr: "0.0.0.0/0"
+            internetgateway: "kubernetes-igw"
+        SecurityGroup:
+        - id: "kubernetes-jumphost"
+          Ingress:
+          - id: "jumphost-allow-incoming-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "jumphost-allow-incoming-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "jumphost-allow-incoming-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Egress:
+          - id: "jumphost-allow-outgoing-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["172.31.0.0/16"]
+          - id: "jumphost-allow-outgoing-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "jumphost-allow-outgoing-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Jumphost:
+            EC2Instance:
+            - id: "jump"
+              type: "t2.small"
+              Key:
+                id: "Floble"
+                path: "/home/floble/.ssh/id_rsa_floble"
+              Image:
+                id: "ami-009c174642dba28e4"
+                user: "ubuntu"
+      - id: "private-backend"
+        availability_zone: "eu-central-1a"
+        cidr: "172.32.16.0/24"
+        public: false
+        RouteTable:
+        - id: "kubernetes-rtb-private"
+          Route:
+          - id: "private-access-all-route"
+            cidr: "0.0.0.0/0"
+            natgateway: "kubernetes-ngw"
+        NetworkLoadBalancer:
+        - id: "kubernetes-loadbalancer"
+          protocol: "TCP"
+          ip: "172.32.16.88"
+          port: 6443
+        SecurityGroup:
+        - id: "kubernetes-etcd"
+          Ingress:
+          - id: "etcd-allow-incoming-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "etcd-allow-incoming-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "etcd-allow-incoming-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Egress:
+          - id: "etcd-allow-outgoing-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["172.32.0.0/16"]
+          - id: "etcd-allow-outgoing-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "etcd-allow-outgoing-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Etcd:
+            EC2Instance:
+            - id: "etcd1"
+              type: "t2.small"
+              Key:
+                id: "Floble"
+                path: "/home/floble/.ssh/id_rsa_floble"
+              Image:
+                id: "ami-009c174642dba28e4"
+                user: "ubuntu"
+            - id: "etcd2"
+              type: "t2.small"
+              Key:
+                id: "Floble"
+                path: "/home/floble/.ssh/id_rsa_floble"
+              Image:
+                id: "ami-009c174642dba28e4"
+                user: "ubuntu"
+            - id: "etcd3"
+              type: "t2.small"
+              Key:
+                id: "Floble"
+                path: "/home/floble/.ssh/id_rsa_floble"
+              Image:
+                id: "ami-009c174642dba28e4"
+                user: "ubuntu"
+        - id: "kubernetes-controlplane"
+          Ingress:
+          - id: "controlplane-allow-incoming-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "controlplane-allow-incoming-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "controlplane-allow-incoming-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Egress:
+          - id: "controlplane-allow-outgoing-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["172.32.0.0/16"]
+          - id: "controlplane-allow-outgoing-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "controlplane-allow-outgoing-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          TargetGroup:
+          - id: "controlplane-targetgroup"
+            protocol: "TCP"
+            port: 6443
+            loadbalancer: "kubernetes-loadbalancer"
+            Controlplane:
+              EC2Instance:
+              - id: "ctrpl1"
+                type: "t2.large"
+                Key:
+                  id: "Floble"
+                  path: "/home/floble/.ssh/id_rsa_floble"
+                Image:
+                  id: "ami-009c174642dba28e4"
+                  user: "ubuntu"
+              - id: "ctrpl2"
+                type: "t2.large"
+                Key:
+                  id: "Floble"
+                  path: "/home/floble/.ssh/id_rsa_floble"
+                Image:
+                  id: "ami-009c174642dba28e4"
+                  user: "ubuntu"
+        - id: "kubernetes-worker"
+          Ingress:
+          - id: "worker-allow-incoming-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "worker-allow-incoming-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "worker-allow-incoming-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Egress:
+          - id: "worker-allow-outgoing-ssh"
+            from_port: 22
+            to_port: 22
+            protocol: "tcp"
+            cidr: ["172.32.0.0/16"]
+          - id: "worker-allow-outgoing-all"
+            from_port: 0
+            to_port: 65535
+            protocol: "tcp"
+            cidr: ["0.0.0.0/0"]
+          - id: "worker-allow-outgoing-ping"
+            from_port: -1
+            to_port: -1
+            protocol: "icmp"
+            cidr: ["0.0.0.0/0"]
+          Worker:
+            EC2Instance:
+            - id: "wrk1"
+              type: "t2.large"
+              Key:
+                id: "Floble"
+                path: "/home/floble/.ssh/id_rsa_floble"
+              Image:
+                id: "ami-009c174642dba28e4"
+                user: "ubuntu"
