@@ -93,17 +93,19 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 
-	yuma.DetermineDeploymentPlan(0, 1)
-
-	for i := 1; i < len(yuma.DeploymentPlan); i++ {
-		fmt.Printf("%d", i)
-		fmt.Printf(" - ")
-		fmt.Printf("%b", yuma.DeploymentPlan[i])
+	if yuma.DetermineDeploymentPlan(0, 1) {
+		for i := 1; i < len(yuma.DeploymentPlan); i++ {
+			fmt.Printf("%d", i)
+			fmt.Printf(" - ")
+			fmt.Printf("%b", yuma.DeploymentPlan[i])
+			fmt.Println()
+		}
+	
 		fmt.Println()
+		fmt.Println()
+	
+		yuma.PrintDeploymentPlan()
+	} else {
+		fmt.Println("No deploymentplan could be determined!")
 	}
-
-	fmt.Println()
-	fmt.Println()
-
-	yuma.PrintDeploymentPlan()
 }

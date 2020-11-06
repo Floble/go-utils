@@ -56,10 +56,9 @@ func (yuma *Yuma) DetermineDeploymentPlan(mask uint8, depth int) bool {
 
 		if yuma.playRole(role) {
 			deletePlaybook()
-			mask |= config
-			yuma.DeploymentPlan[depth] = mask
+			yuma.DeploymentPlan[depth] = config
 
-			if yuma.DetermineDeploymentPlan(mask, depth + 1) {
+			if yuma.DetermineDeploymentPlan(mask | config, depth + 1) {
 				return true
 			}
 		} else {
@@ -72,8 +71,7 @@ func (yuma *Yuma) DetermineDeploymentPlan(mask uint8, depth int) bool {
 
 func (yuma *Yuma) PrintDeploymentPlan() {
 	for i := 1; i < len(yuma.DeploymentPlan); i++ {
-		config := yuma.DeploymentPlan[i - 1] ^ yuma.DeploymentPlan[i]
-		fmt.Println(strconv.Itoa(i) + " - " + yuma.Configurations[config])
+		fmt.Println(strconv.Itoa(i) + " - " + yuma.Configurations[yuma.DeploymentPlan[i]])
 	}
 }
 
