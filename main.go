@@ -83,6 +83,7 @@ func main() {
 
 	yuma := architecture.NewYuma("/home/floble/yuma-test/roles/")
 
+	fmt.Println("Role name - configuration:")
 	for role, config := range yuma.Roles {
 		fmt.Printf("%s", role)
 		fmt.Printf(" - ")
@@ -93,19 +94,26 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 
-	if yuma.DetermineDeploymentPlan(0, 1) {
-		for i := 1; i < len(yuma.DeploymentPlan); i++ {
-			fmt.Printf("%d", i)
-			fmt.Printf(" - ")
-			fmt.Printf("%b", yuma.DeploymentPlan[i])
-			fmt.Println()
-		}
-	
-		fmt.Println()
-		fmt.Println()
-	
-		yuma.PrintDeploymentPlan()
+	result := yuma.DetermineDeploymentPlan()
+
+	if result {
+		fmt.Println("All Ansible roles are included in the deploymentplan")
 	} else {
-		fmt.Println("No deploymentplan could be determined!")
+		fmt.Println("The deploymentplan does not include all Ansible roles")
 	}
+	fmt.Println()
+
+	fmt.Println("Deploymentplan (configurations):")
+	for i := 1; i < len(yuma.DeploymentPlan); i++ {
+		fmt.Printf("%d", i)
+		fmt.Printf(" - ")
+		fmt.Printf("%b", yuma.DeploymentPlan[i])
+		fmt.Println()
+	}
+
+	fmt.Println()
+	fmt.Println()
+	fmt.Println("Deploymentplan (role names):")
+
+	yuma.PrintDeploymentPlan()
 }

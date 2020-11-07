@@ -11,19 +11,19 @@ import (
 )
 
 type Yuma struct {
-	Roles map[string]uint8
-	Configurations map[uint8]string
-	DeploymentPlan []uint8
+	Roles map[string]int
+	Configurations map[int]string
+	DeploymentPlan []int
 }
 
 func NewYuma(path string) *Yuma {
 	yuma := new(Yuma)
-	yuma.Roles = make(map[string]uint8, 0)
-	yuma.Configurations = make(map[uint8]string, 0)
+	yuma.Roles = make(map[string]int, 0)
+	yuma.Configurations = make(map[int]string, 0)
 	if err := yuma.identifyRoles(path); err != nil {
 		return nil
 	}
-	yuma.DeploymentPlan = make([]uint8, len(yuma.Roles) + 1)
+	yuma.DeploymentPlan = make([]int, len(yuma.Roles) + 1)
 
 	return yuma
 }
@@ -35,8 +35,8 @@ func (yuma *Yuma) identifyRoles(path string) error {
     }
 
 	for i := 0; i < len(roles); i++ {
-		var config uint8 = 0
-		config |= uint8(math.Exp2(float64(i)))
+		var config int = 0
+		config |= int(math.Exp2(float64(i)))
 		yuma.Roles[roles[i].Name()] = config
 		yuma.Configurations[config] = roles[i].Name()
 	}
@@ -44,34 +44,39 @@ func (yuma *Yuma) identifyRoles(path string) error {
 	return nil
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan(mask uint8, depth int) bool {
-	if mask == uint8(math.Exp2(float64(len(yuma.Roles)))) - 1 {
-		return true
-	}
+func (yuma *Yuma) DetermineDeploymentPlan() bool {
+	deploymentPlan := make([]int, len(yuma.Roles) + 1)
+	deploymentPlan[0] = 0
 
-	for role, config := range yuma.Roles {
-		if mask & config != 0 {
-			continue
-		}
-
-		if yuma.playRole(role) {
-			deletePlaybook()
-			yuma.DeploymentPlan[depth] = config
-
-			if yuma.DetermineDeploymentPlan(mask | config, depth + 1) {
-				return true
+	for i := 1; i <= len(yuma.Roles); i++ {
+		for role, config := range yuma.Roles {
+			if deploymentPlan[i - 1] & config != 0 {
+				continue
 			}
-		} else {
-			deletePlaybook()
+
+			if yuma.playRole(role) {
+				deletePlaybook()
+				deploymentPlan[i] = deploymentPlan[i - 1] | config
+				break
+			} else {
+				deletePlaybook()
+			}
 		}
 	}
 
-	return false
+	yuma.DeploymentPlan = deploymentPlan
+
+	if deploymentPlan[len(yuma.Roles)] == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (yuma *Yuma) PrintDeploymentPlan() {
 	for i := 1; i < len(yuma.DeploymentPlan); i++ {
-		fmt.Println(strconv.Itoa(i) + " - " + yuma.Configurations[yuma.DeploymentPlan[i]])
+		config := yuma.DeploymentPlan[i - 1] ^ yuma.DeploymentPlan[i]
+		fmt.Println(strconv.Itoa(i) + " - " + yuma.Configurations[config])
 	}
 }
 
