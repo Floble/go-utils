@@ -52,20 +52,18 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
 			return false
 		}
 
-		if yuma.DeploymentPlan[i - 1] >= int(math.Exp2(float64(i - 1))) - 1 {
-			for role, config := range yuma.Roles {
-				if yuma.DeploymentPlan[i - 1] & config != 0 {
-					continue
-				}
+		for role, config := range yuma.Roles {
+			if yuma.DeploymentPlan[i - 1] & config != 0 {
+				continue
+			}
 
-				if yuma.playRole(role) {
-					deletePlaybook()
-					yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1] | config
-					break
-				} else {
-					deletePlaybook()
-					yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1]
-				}
+			if yuma.playRole(role) {
+				deletePlaybook()
+				yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1] | config
+				break
+			} else {
+				deletePlaybook()
+				yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1]
 			}
 		}
 	}
