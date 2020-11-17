@@ -79,25 +79,19 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(mask int, depth int) 
 		return true
 	}
 
-	if mask < int(math.Exp2(float64(depth))) - 1 {
-		return false
-	}
+	for role, config := range yuma.Roles {
+		if mask & config != 0 {
+			continue
+		}
 
-	if mask >= int(math.Exp2(float64(depth))) - 1 {
-		for role, config := range yuma.Roles {
-			if mask & config != 0 {
-				continue
+		if yuma.playRole(role) {
+			deletePlaybook()
+			if yuma.DetermineDeploymentPlan_Greedy_Recursive(mask | config, depth + 1) {
+				yuma.DeploymentPlan[depth] = mask
+				return true
 			}
-
-			if yuma.playRole(role) {
-				deletePlaybook()
-				if yuma.DetermineDeploymentPlan_Greedy_Recursive(mask | config, depth + 1) {
-					yuma.DeploymentPlan[depth] = mask
-					return true
-				}
-			} else {
-				deletePlaybook()
-			}
+		} else {
+			deletePlaybook()
 		}
 	}
 
