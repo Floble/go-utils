@@ -94,8 +94,10 @@ func main() {
 	fmt.Println()
 	fmt.Println()
 
-	//result := yuma.DetermineDeploymentPlan_Top_Down(0, 0)
-	result := yuma.DetermineDeploymentPlan_Bottom_Up()
+	//result := yuma.DetermineDeploymentPlan_Backtracking(0, 0)
+	//result := yuma.DetermineDeploymentPlan_Dfs(0, 0)
+	//result := yuma.DetermineDeploymentPlan_Greedy_Recursive(0, 0)
+	result := yuma.DetermineDeploymentPlan_Greedy_Iterative()
 
 	if result {
 		fmt.Println("All Ansible roles are included in the deploymentplan")

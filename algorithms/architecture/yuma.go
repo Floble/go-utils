@@ -44,21 +44,28 @@ func (yuma *Yuma) identifyRoles(path string) error {
 	return nil
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan_Bottom_Up() bool {
+func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
 	yuma.DeploymentPlan[0] = 0
 
 	for i := 1; i <= len(yuma.Roles); i++ {
-		for role, config := range yuma.Roles {
-			if yuma.DeploymentPlan[i - 1] & config != 0 {
-				continue
-			}
+		if yuma.DeploymentPlan[i - 1] < int(math.Exp2(float64(i - 1))) - 1 {
+			return false
+		}
 
-			if yuma.playRole(role) {
-				deletePlaybook()
-				yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1] | config
-				break
-			} else {
-				deletePlaybook()
+		if yuma.DeploymentPlan[i - 1] >= int(math.Exp2(float64(i - 1))) - 1 {
+			for role, config := range yuma.Roles {
+				if yuma.DeploymentPlan[i - 1] & config != 0 {
+					continue
+				}
+
+				if yuma.playRole(role) {
+					deletePlaybook()
+					yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1] | config
+					break
+				} else {
+					deletePlaybook()
+					yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1]
+				}
 			}
 		}
 	}
@@ -66,30 +73,96 @@ func (yuma *Yuma) DetermineDeploymentPlan_Bottom_Up() bool {
 	return yuma.DeploymentPlan[len(yuma.Roles)] == int(math.Exp2(float64(len(yuma.Roles)))) - 1
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan_Top_Down(mask int, depth int) bool {
+func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(mask int, depth int) bool {
 	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
 		yuma.DeploymentPlan[depth] = mask
 		return true
 	}
 
-	for role, config := range yuma.Roles {
-		if mask & config != 0 {
-			continue
-		}
+	if mask < int(math.Exp2(float64(depth))) - 1 {
+		return false
+	}
 
-		if yuma.playRole(role) {
-			deletePlaybook()
-			yuma.DeploymentPlan[depth] = mask
-	
-			if yuma.DetermineDeploymentPlan_Top_Down(mask | config, depth + 1) {
-				return true
+	if mask >= int(math.Exp2(float64(depth))) - 1 {
+		for role, config := range yuma.Roles {
+			if mask & config != 0 {
+				continue
 			}
-		} else {
-			deletePlaybook()
+
+			if yuma.playRole(role) {
+				deletePlaybook()
+				if yuma.DetermineDeploymentPlan_Greedy_Recursive(mask | config, depth + 1) {
+					yuma.DeploymentPlan[depth] = mask
+					return true
+				}
+			} else {
+				deletePlaybook()
+			}
 		}
 	}
 
 	return false
+}
+
+func (yuma *Yuma) DetermineDeploymentPlan_Dfs(mask int, depth int) bool {
+	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+		yuma.DeploymentPlan[depth] = mask
+		return true
+	}
+
+	if mask < int(math.Exp2(float64(depth))) - 1 {
+		return false
+	}
+
+	result := false
+
+	if mask >= int(math.Exp2(float64(depth))) - 1 {
+		for role, config := range yuma.Roles {
+			if mask & config != 0 {
+				continue
+			}
+
+			if yuma.playRole(role) {
+				deletePlaybook()
+				if yuma.DetermineDeploymentPlan_Dfs(mask | config, depth + 1) {
+					yuma.DeploymentPlan[depth] = mask
+					result = result || true
+					return result
+				}
+			} else {
+				deletePlaybook()
+				result = result || yuma.DetermineDeploymentPlan_Dfs(mask, depth + 1)
+			}
+		}
+	}
+
+	return result
+}
+
+func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(mask int, depth int) bool {
+	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+		return true
+	}
+
+	if mask < int(math.Exp2(float64(depth))) - 1 {
+		return false
+	}
+
+	result := false
+
+	if mask >= int(math.Exp2(float64(depth))) - 1 {
+		for role, config := range yuma.Roles {
+			if yuma.playRole(role) {
+				deletePlaybook()
+				result = result || yuma.DetermineDeploymentPlan_Backtracking(mask | config, depth + 1)
+			} else {
+				deletePlaybook()
+				result = result || yuma.DetermineDeploymentPlan_Backtracking(mask, depth + 1)
+			}
+		}
+	}
+
+	return result
 }
 
 func (yuma *Yuma) PrintDeploymentPlan() {
