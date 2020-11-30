@@ -47,23 +47,23 @@ func (yuma *Yuma) identifyRoles(path string) error {
 func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
 	yuma.DeploymentPlan[0] = 0
 
-	for i := 1; i <= len(yuma.Roles); i++ {
-		if yuma.DeploymentPlan[i - 1] < int(math.Exp2(float64(i - 1))) - 1 {
+	for d := 1; d <= len(yuma.Roles); d++ {
+		if yuma.DeploymentPlan[d - 1] < int(math.Exp2(float64(d - 1))) - 1 {
 			return false
 		}
 
 		for role, config := range yuma.Roles {
-			if yuma.DeploymentPlan[i - 1] & config != 0 {
+			if yuma.DeploymentPlan[d - 1] & config != 0 {
 				continue
 			}
 
 			if yuma.playRole(role) {
 				deletePlaybook()
-				yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1] | config
+				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1] | config
 				break
 			} else {
 				deletePlaybook()
-				yuma.DeploymentPlan[i] = yuma.DeploymentPlan[i - 1]
+				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1]
 			}
 		}
 	}
@@ -71,22 +71,24 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
 	return yuma.DeploymentPlan[len(yuma.Roles)] == int(math.Exp2(float64(len(yuma.Roles)))) - 1
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(mask int, depth int) bool {
-	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
-		yuma.DeploymentPlan[depth] = mask
+func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(state int, depth int) bool {
+	if state == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+		yuma.DeploymentPlan[depth] = state
 		return true
 	}
 
 	for role, config := range yuma.Roles {
-		if mask & config != 0 {
+		if state & config != 0 {
 			continue
 		}
 
 		if yuma.playRole(role) {
 			deletePlaybook()
-			if yuma.DetermineDeploymentPlan_Greedy_Recursive(mask | config, depth + 1) {
-				yuma.DeploymentPlan[depth] = mask
+			if yuma.DetermineDeploymentPlan_Greedy_Recursive(state | config, depth + 1) {
+				yuma.DeploymentPlan[depth] = state
 				return true
+			} else {
+				return false
 			}
 		} else {
 			deletePlaybook()
@@ -96,34 +98,34 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(mask int, depth int) 
 	return false
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan_Dfs(mask int, depth int) bool {
-	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
-		yuma.DeploymentPlan[depth] = mask
+func (yuma *Yuma) DetermineDeploymentPlan_Dfs(state int, depth int) bool {
+	if state == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+		yuma.DeploymentPlan[depth] = state
 		return true
 	}
 
-	if mask < int(math.Exp2(float64(depth))) - 1 {
+	if state < int(math.Exp2(float64(depth))) - 1 {
 		return false
 	}
 
 	result := false
 
-	if mask >= int(math.Exp2(float64(depth))) - 1 {
+	if state >= int(math.Exp2(float64(depth))) - 1 {
 		for role, config := range yuma.Roles {
-			if mask & config != 0 {
+			if state & config != 0 {
 				continue
 			}
 
 			if yuma.playRole(role) {
 				deletePlaybook()
-				if yuma.DetermineDeploymentPlan_Dfs(mask | config, depth + 1) {
-					yuma.DeploymentPlan[depth] = mask
+				if yuma.DetermineDeploymentPlan_Dfs(state | config, depth + 1) {
+					yuma.DeploymentPlan[depth] = state
 					result = result || true
 					return result
 				}
 			} else {
 				deletePlaybook()
-				result = result || yuma.DetermineDeploymentPlan_Dfs(mask, depth + 1)
+				result = result || yuma.DetermineDeploymentPlan_Dfs(state, depth + 1)
 			}
 		}
 	}
@@ -131,25 +133,25 @@ func (yuma *Yuma) DetermineDeploymentPlan_Dfs(mask int, depth int) bool {
 	return result
 }
 
-func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(mask int, depth int) bool {
-	if mask == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
+func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(state int, depth int) bool {
+	if state == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
 		return true
 	}
 
-	if mask < int(math.Exp2(float64(depth))) - 1 {
+	if state < int(math.Exp2(float64(depth))) - 1 {
 		return false
 	}
 
 	result := false
 
-	if mask >= int(math.Exp2(float64(depth))) - 1 {
+	if state >= int(math.Exp2(float64(depth))) - 1 {
 		for role, config := range yuma.Roles {
 			if yuma.playRole(role) {
 				deletePlaybook()
-				result = result || yuma.DetermineDeploymentPlan_Backtracking(mask | config, depth + 1)
+				result = result || yuma.DetermineDeploymentPlan_Backtracking(state | config, depth + 1)
 			} else {
 				deletePlaybook()
-				result = result || yuma.DetermineDeploymentPlan_Backtracking(mask, depth + 1)
+				result = result || yuma.DetermineDeploymentPlan_Backtracking(state, depth + 1)
 			}
 		}
 	}
