@@ -11,16 +11,20 @@ import (
 )
 
 type Yuma struct {
+	Inventory, Playbook, Examples string
 	Roles map[string]int
 	Configurations map[int]string
 	DeploymentPlan []int
 }
 
-func NewYuma(path string) *Yuma {
+func NewYuma(inventory, playbook, examples string) *Yuma {
 	yuma := new(Yuma)
+	yuma.Inventory = inventory
+	yuma.Playbook = playbook
+	yuma.Examples = examples
 	yuma.Roles = make(map[string]int, 0)
 	yuma.Configurations = make(map[int]string, 0)
-	if err := yuma.identifyRoles(path); err != nil {
+	if err := yuma.identifyRoles(examples); err != nil {
 		return nil
 	}
 	yuma.DeploymentPlan = make([]int, len(yuma.Roles) + 1)
@@ -58,11 +62,11 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
 			}
 
 			if yuma.playRole(role) {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1] | config
 				break
 			} else {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1]
 			}
 		}
@@ -83,7 +87,7 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(state int, depth int)
 		}
 
 		if yuma.playRole(role) {
-			deletePlaybook()
+			deletePlaybook(yuma.Playbook)
 			if yuma.DetermineDeploymentPlan_Greedy_Recursive(state | config, depth + 1) {
 				yuma.DeploymentPlan[depth] = state
 				return true
@@ -91,7 +95,7 @@ func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(state int, depth int)
 				return false
 			}
 		} else {
-			deletePlaybook()
+			deletePlaybook(yuma.Playbook)
 		}
 	}
 
@@ -117,14 +121,14 @@ func (yuma *Yuma) DetermineDeploymentPlan_Dfs(state int, depth int) bool {
 			}
 
 			if yuma.playRole(role) {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				if yuma.DetermineDeploymentPlan_Dfs(state | config, depth + 1) {
 					yuma.DeploymentPlan[depth] = state
 					result = result || true
 					return result
 				}
 			} else {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				result = result || yuma.DetermineDeploymentPlan_Dfs(state, depth + 1)
 			}
 		}
@@ -147,10 +151,10 @@ func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(state int, depth int) boo
 	if state >= int(math.Exp2(float64(depth))) - 1 {
 		for role, config := range yuma.Roles {
 			if yuma.playRole(role) {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				result = result || yuma.DetermineDeploymentPlan_Backtracking(state | config, depth + 1)
 			} else {
-				deletePlaybook()
+				deletePlaybook(yuma.Playbook)
 				result = result || yuma.DetermineDeploymentPlan_Backtracking(state, depth + 1)
 			}
 		}
@@ -166,45 +170,45 @@ func (yuma *Yuma) PrintDeploymentPlan() {
 	}
 }
 
-func createPlaybook(role string) error {
-	file, err := os.OpenFile("/home/floble/yuma-test/build.yml", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func createPlaybook(playbook, examples, role string) error {
+	file, err := os.OpenFile(playbook, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
 
 	defer file.Close()
 
-	if _, err := file.WriteString(stringBuilder(role)); err != nil {
+	if _, err := file.WriteString(stringBuilder(examples, role)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func deletePlaybook() error {
-	if err := os.Remove("/home/floble/yuma-test/build.yml"); err != nil {
+func deletePlaybook(playbook string) error {
+	if err := os.Remove(playbook); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func stringBuilder(role string) string {
+func stringBuilder(examples, role string) string {
 	export := "---\n"
 	export += "- hosts: Yuma\n"
 	export += "  roles:\n"
-	export += "    - /home/floble/yuma-test/roles/" + role + "\n"
+	export += "    - " + examples + role + "\n"
 
 	return export
 }
 
 func (yuma *Yuma) playRole(role string) bool {
-	err := createPlaybook(role)
+	err := createPlaybook(yuma.Playbook, yuma.Examples, role)
 	if err != nil {
 		return false
 	}
 
-	cmd := exec.Command("ansible-playbook", "-i", "/home/floble/yuma-test/hosts", "/home/floble/yuma-test/build.yml")
+	cmd := exec.Command("ansible-playbook", "-i", yuma.Inventory, yuma.Playbook)
   
 	out, err := cmd.StdoutPipe()
 	if err != nil {

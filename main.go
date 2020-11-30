@@ -81,7 +81,7 @@ func main() {
 	fmt.Println("Knuth-Morris-Pratt:")
 	fmt.Println(shifts) */
 
-	yuma := architecture.NewYuma("/home/floble/yuma-test/roles/")
+	yuma := architecture.NewYuma("/home/floble/go/src/go-utils/algorithms/architecture/example/hosts", "/home/floble/go/src/go-utils/algorithms/architecture/example/build.yml", "/home/floble/go/src/go-utils/algorithms/architecture/example/roles/")
 
 	fmt.Println("Role name - configuration:")
 	for role, config := range yuma.Roles {

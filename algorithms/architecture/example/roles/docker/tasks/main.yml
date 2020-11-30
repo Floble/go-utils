@@ -1,0 +1,14 @@
+---
+- name: install the latest version of Docker-CE
+  become: yes
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+
+- name: install the latest version of Docker-CE-CLI
+  become: yes
+  apt:
+    name: docker-ce-cli
+    state: latest
+    update_cache: true
