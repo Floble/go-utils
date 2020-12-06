@@ -120,12 +120,21 @@ func main() {
 
 	yuma.PrintDeploymentPlan() */
 
-	test6 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
+	/* test6 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
 
 	heap := datastructs.NewHeap(test6)
 	heap.Sort()
 
 	for _, n := range heap.Array {
 		fmt.Println(n)
-	}
+	} */
+
+	test7 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
+
+	pq := datastructs.NewMaxPriorityQueue(test7)
+	pq.Heap.BuildMaxHeap()
+	
+	pq.Insert(21)
+
+	fmt.Println(pq.Maximum())
 }
