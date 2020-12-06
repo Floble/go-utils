@@ -4,8 +4,8 @@ import (
 	"fmt"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
-	//datastructs "go-utils/datastructures"
-	architecture "go-utils/algorithms/architecture"
+	datastructs "go-utils/datastructures"
+	//architecture "go-utils/algorithms/architecture"
 )
 
 func main() {
@@ -81,7 +81,7 @@ func main() {
 	fmt.Println("Knuth-Morris-Pratt:")
 	fmt.Println(shifts) */
 
-	yuma := architecture.NewYuma("/home/floble/go/src/go-utils/algorithms/architecture/example/hosts", "/home/floble/go/src/go-utils/algorithms/architecture/example/build.yml", "/home/floble/go/src/go-utils/algorithms/architecture/example/roles/")
+	/* yuma := architecture.NewYuma("/home/floble/go/src/go-utils/algorithms/architecture/example/hosts", "/home/floble/go/src/go-utils/algorithms/architecture/example/build.yml", "/home/floble/go/src/go-utils/algorithms/architecture/example/roles/")
 
 	fmt.Println("Role name - configuration:")
 	for role, config := range yuma.Roles {
@@ -118,5 +118,14 @@ func main() {
 	fmt.Println()
 	fmt.Println("Deploymentplan (role names):")
 
-	yuma.PrintDeploymentPlan()
+	yuma.PrintDeploymentPlan() */
+
+	test6 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
+
+	heap := datastructs.NewHeap(test6)
+	heap.Sort()
+
+	for _, n := range heap.Array {
+		fmt.Println(n)
+	}
 }
