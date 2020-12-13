@@ -1,4 +1,4 @@
-package datastructures
+package sorting
 
 type Heap struct {
 	Size int

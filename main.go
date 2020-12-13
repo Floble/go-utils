@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	//sorting "go-utils/algorithms/sorting"
+	sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
-	datastructs "go-utils/datastructures"
+	//datastructs "go-utils/datastructures"
 	//architecture "go-utils/algorithms/architecture"
 )
 
@@ -129,12 +129,18 @@ func main() {
 		fmt.Println(n)
 	} */
 
-	test7 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
+	/* test7 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
 
 	pq := datastructs.NewMaxPriorityQueue(test7)
 	pq.Heap.BuildMaxHeap()
 	
 	pq.Insert(21)
 
-	fmt.Println(pq.Maximum())
+	fmt.Println(pq.Maximum()) */
+
+	test8 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	quickSort := sorting.NewQuickSort()
+	quickSort.Sort(test8)
+	fmt.Println("QuickSort:")
+	fmt.Println(test8)
 }
