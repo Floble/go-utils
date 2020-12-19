@@ -138,9 +138,17 @@ func main() {
 
 	fmt.Println(pq.Maximum()) */
 
-	test8 := []int{3, 2, 4, 1, 5, 8, 12, 0}
+	/* test8 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	quickSort := sorting.NewQuickSort()
 	quickSort.Sort(test8)
 	fmt.Println("QuickSort:")
-	fmt.Println(test8)
+	fmt.Println(test8) */
+
+	test9 := []int{3, 8, 2, 9, 1, 13, 6, 5, 0, 2, 3, 9}
+	countingSort := sorting.NewCountingSort()
+	result := countingSort.Sort(test9, 13)
+	
+	for i := 1; i <= len(test9); i++ {
+		fmt.Println(result[i])
+	}
 }
