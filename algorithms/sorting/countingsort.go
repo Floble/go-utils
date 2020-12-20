@@ -29,5 +29,5 @@ func (countingSort *CountingSort) Sort(numbers []int, k int) []int {
 		tmp[numbers[j]] -= 1
 	}
 
-	return result
+	return result[1:]
 }

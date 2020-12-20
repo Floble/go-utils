@@ -144,11 +144,13 @@ func main() {
 	fmt.Println("QuickSort:")
 	fmt.Println(test8) */
 
-	test9 := []int{3, 8, 2, 9, 1, 13, 6, 5, 0, 2, 3, 9}
+	/* test9 := []int{3, 8, 2, 9, 1, 13, 6, 5, 0, 2, 3, 9}
 	countingSort := sorting.NewCountingSort()
 	result := countingSort.Sort(test9, 13)
-	
-	for i := 1; i <= len(test9); i++ {
-		fmt.Println(result[i])
-	}
+	fmt.Println(result) */
+
+	test10 := []int{43, 12, 21}
+	radixSort := sorting.NewRadixSort()
+	result := radixSort.Sort(test10, 2)
+	fmt.Println(result)
 }
