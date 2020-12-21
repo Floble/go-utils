@@ -149,8 +149,13 @@ func main() {
 	result := countingSort.Sort(test9, 13)
 	fmt.Println(result) */
 
-	test10 := []int{43, 12, 21}
+	/* test10 := []int{43, 12, 21}
 	radixSort := sorting.NewRadixSort()
 	result := radixSort.Sort(test10, 2)
+	fmt.Println(result) */
+
+	test11 := []float64{0.78, 0.17, 0.39, 0.26, 0.72, 0.94, 0.21, 0.12, 0.23, 0.68}
+	bucketSort := sorting.NewBucketSort()
+	result := bucketSort.Sort(test11)
 	fmt.Println(result)
 }
