@@ -1,5 +1,10 @@
 package orderstatistics
 
+import (
+	"math/rand"
+	"time"
+)
+
 type Selection struct {
 }
 
@@ -93,4 +98,53 @@ func (selection *Selection) MinimumMaximum(nums []int) (int, int) {
 	}
 
 	return min, max
+}
+
+func (selection *Selection) RandomSelect(nums []int, p, r, i int) int {
+	if p >= r {
+		return nums[p]
+	}
+
+	q := selection.randomPartition(nums, p, r)
+	k := q - p + 1
+
+	if i == k {
+		return nums[q]
+	} else if i < k {
+		return selection.RandomSelect(nums, p, q - 1, i)
+	} else {
+		return selection.RandomSelect(nums, q + 1, r, i - k)
+	}
+}
+
+func (selection *Selection) randomPartition(numbers []int, p, r int) int {
+	rand.Seed(time.Now().UnixNano())
+	i := r - p + 1
+	i = rand.Intn(r - p + 1) + p
+
+	tmp := numbers[r]
+	numbers[r] = numbers[i]
+	numbers[i] = tmp
+
+	return selection.partition(numbers, p, r)
+}
+
+func (selection *Selection) partition(numbers []int, p, r int) int {
+	x := numbers[r]
+	i := p - 1
+
+	for j := p; j < r; j++ {
+		if numbers[j] <= x {
+			i++
+			tmp := numbers[i]
+			numbers[i] = numbers[j]
+			numbers[j] = tmp
+		}
+	}
+
+	tmp := numbers[i + 1]
+	numbers[i+ 1] = numbers[r]
+	numbers[r] = tmp
+
+	return i + 1
 }

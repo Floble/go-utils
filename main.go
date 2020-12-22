@@ -160,9 +160,8 @@ func main() {
 	result := bucketSort.Sort(test11)
 	fmt.Println(result) */
 
-	test12 := []int{23, 56, 78, 12, 3, 9768678665, 0}
+	test12 := []int{0, 23, 12, 14, 1723, 35, 99}
 	selection := orderstatistics.NewSelection()
-	min, max := selection.MinimumMaximum(test12)
-	fmt.Println(min)
-	fmt.Println(max)
+	i := selection.RandomSelect(test12, 0, len(test12) - 1, 7)
+	fmt.Println(i)
 }

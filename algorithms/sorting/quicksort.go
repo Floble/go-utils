@@ -2,6 +2,7 @@ package sorting
 
 import (
 	"math/rand"
+	"time"
 )
 
 type QuickSort struct {
@@ -25,7 +26,10 @@ func quicksort(numbers []int, p int, r int) {
 }
 
 func randomPartition(numbers []int, p int, r int) int {
-	i := p + rand.Intn(r - p + 1)
+	rand.Seed(time.Now().UnixNano())
+	i := r - p + 1
+	i = rand.Intn(r - p + 1) + p
+
 	tmp := numbers[r]
 	numbers[r] = numbers[i]
 	numbers[i] = tmp
@@ -47,7 +51,7 @@ func partition(numbers []int, p int, r int) int {
 	}
 
 	tmp := numbers[i + 1]
-	numbers[i+ 1] = numbers[r]
+	numbers[i + 1] = numbers[r]
 	numbers[r] = tmp
 
 	return i + 1
