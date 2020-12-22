@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	sorting "go-utils/algorithms/sorting"
+	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
 	//architecture "go-utils/algorithms/architecture"
+	orderstatistics "go-utils/algorithms/orderstatistics"
 )
 
 func main() {
@@ -154,8 +155,14 @@ func main() {
 	result := radixSort.Sort(test10, 2)
 	fmt.Println(result) */
 
-	test11 := []float64{0.78, 0.17, 0.39, 0.26, 0.72, 0.94, 0.21, 0.12, 0.23, 0.68}
+	/* test11 := []float64{0.78, 0.17, 0.39, 0.26, 0.72, 0.94, 0.21, 0.12, 0.23, 0.68}
 	bucketSort := sorting.NewBucketSort()
 	result := bucketSort.Sort(test11)
-	fmt.Println(result)
+	fmt.Println(result) */
+
+	test12 := []int{23, 56, 78, 12, 3, 9768678665, 0}
+	selection := orderstatistics.NewSelection()
+	min, max := selection.MinimumMaximum(test12)
+	fmt.Println(min)
+	fmt.Println(max)
 }
