@@ -148,3 +148,85 @@ func (selection *Selection) partition(numbers []int, p, r int) int {
 
 	return i + 1
 }
+
+func (selection *Selection) Select(nums []int, p, r, i int) int {
+	if p >= r {
+		return nums[p]
+	}
+
+	x := selection.median(nums, p, r)
+	q := selection.modifiedPartition(nums, p, r, x)
+	k := q - p + 1
+
+	if i == k {
+		return nums[q]
+	} else if i < k {
+		return selection.Select(nums, p, q - 1, i)
+	} else {
+		return selection.Select(nums, q + 1, r, i - k)
+	}
+}
+
+func (selection *Selection) median(nums []int, p, r int) int {
+	size := 5
+	if r - p + 1 <= size {
+		result := selection.insertionSort(nums[p:r])
+		median := (len(result) - 1) / 2
+		return result[median]
+	}
+
+	if p >= r {
+		return nums[p]
+	}
+
+	medians := make([]int, 0)
+	for i := p; i <= r; i += size {
+		end := i + size - 1
+
+		if end > r {
+			end = r
+		}
+
+		medians = append(medians, selection.median(nums, i, end))
+	}
+
+	return selection.median(medians, 0, len(medians) - 1)
+}
+
+func (selection *Selection) insertionSort(numbers []int) []int {
+	for i := 1; i < len(numbers); i++ {
+		key := numbers[i]
+		j := i-1
+		for j >= 0 && numbers[j] > key {
+			numbers[j+1] = numbers[j]
+			j--
+		}
+		numbers[j+1] = key
+	}
+	return numbers
+}
+
+func (selection *Selection) modifiedPartition(numbers []int, p, r, x int) int {
+	i := p - 1
+
+	for j := p; j < r; j++ {
+		if numbers[j] == x {
+			tmp := numbers[r]
+			numbers[r] = x
+			numbers[j] = tmp
+		}
+
+		if numbers[j] <= x {
+			i++
+			tmp := numbers[i]
+			numbers[i] = numbers[j]
+			numbers[j] = tmp
+		}
+	}
+
+	tmp := numbers[i + 1]
+	numbers[i + 1] = x
+	numbers[r] = tmp
+
+	return i + 1
+}

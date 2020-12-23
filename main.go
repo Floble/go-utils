@@ -162,6 +162,6 @@ func main() {
 
 	test12 := []int{0, 23, 12, 14, 1723, 35, 99}
 	selection := orderstatistics.NewSelection()
-	i := selection.RandomSelect(test12, 0, len(test12) - 1, 7)
+	i := selection.Select(test12, 0, len(test12) - 1, 6)
 	fmt.Println(i)
 }
