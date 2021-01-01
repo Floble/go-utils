@@ -1,5 +1,9 @@
 package machinelearning
 
+import (
+	"math"
+)
+
 type Point struct {
 	x, y float64
 }
@@ -28,8 +32,8 @@ func NewGradientDescent(data []*Point, learningRate float64, maxSteps int) *Grad
 }
 
 func (gd *GradientDescent) LinearRun(sloap, intercept float64) (float64, float64) {
-	stepSizeSloap := 0.0
-	stepSizeIntercept := 0.0
+	stepSizeSloap := math.MaxFloat64
+	stepSizeIntercept := math.MaxFloat64
 	i := 1
 
 	for (stepSizeSloap >= 0.001 && stepSizeIntercept >= 0.001) || (i <= gd.maxSteps) {
