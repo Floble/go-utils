@@ -6,7 +6,8 @@ import (
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
 	//architecture "go-utils/algorithms/architecture"
-	orderstatistics "go-utils/algorithms/orderstatistics"
+	//orderstatistics "go-utils/algorithms/orderstatistics"
+	machine_learning "go-utils/algorithms/machinelearning"
 )
 
 func main() {
@@ -160,8 +161,20 @@ func main() {
 	result := bucketSort.Sort(test11)
 	fmt.Println(result) */
 
-	test12 := []int{0, 23, 12, 14, 1723, 35, 99}
+	/* test12 := []int{0, 23, 12, 14, 1723, 35, 99}
 	selection := orderstatistics.NewSelection()
 	i := selection.Select(test12, 0, len(test12) - 1, 6)
-	fmt.Println(i)
+	fmt.Println(i) */
+
+	p1 := machine_learning.NewPoint(0.5, 1.4)
+	p2 := machine_learning.NewPoint(2.3, 1.9)
+	p3 := machine_learning.NewPoint(2.9, 3.2)
+
+	points := []*machine_learning.Point{p1, p2, p3}
+	gd := machine_learning.NewGradientDescent(points, 0.01, 1000)
+	sloap, intercept := gd.LinearRun(1.0, 0.0)
+	fmt.Println("Sloap:")
+	fmt.Println(sloap)
+	fmt.Println("Intercept:")
+	fmt.Println(intercept)
 }
