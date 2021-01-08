@@ -8,6 +8,8 @@ import (
 	//architecture "go-utils/algorithms/architecture"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	machine_learning "go-utils/algorithms/machinelearning"
+	vector "github.com/atedja/go-vector"
+	helper "go-utils/helper"
 )
 
 func main() {
@@ -166,15 +168,11 @@ func main() {
 	i := selection.Select(test12, 0, len(test12) - 1, 6)
 	fmt.Println(i) */
 
-	p1 := machine_learning.NewPoint(0.5, 1.4)
-	p2 := machine_learning.NewPoint(2.3, 1.9)
-	p3 := machine_learning.NewPoint(2.9, 3.2)
+	p1 := machine_learning.NewPoint(vector.NewWithValues([]float64 {2.0}), 4)
+	p2 := machine_learning.NewPoint(vector.NewWithValues([]float64 {4.0}), 2)
+	points := []*machine_learning.Point{p1, p2}
 
-	points := []*machine_learning.Point{p1, p2, p3}
-	gd := machine_learning.NewGradientDescent(points, 0.01, 1000)
-	sloap, intercept := gd.LinearRun(1.0, 0.0)
-	fmt.Println("Sloap:")
-	fmt.Println(sloap)
-	fmt.Println("Intercept:")
-	fmt.Println(intercept)
+	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 100)
+	w := gd.Run(1)
+	fmt.Println(w)
 }
