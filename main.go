@@ -168,11 +168,15 @@ func main() {
 	i := selection.Select(test12, 0, len(test12) - 1, 6)
 	fmt.Println(i) */
 
-	p1 := machine_learning.NewPoint(vector.NewWithValues([]float64 {2.0}), 4)
+	/* p1 := machine_learning.NewPoint(vector.NewWithValues([]float64 {2.0}), 4)
 	p2 := machine_learning.NewPoint(vector.NewWithValues([]float64 {4.0}), 2)
-	points := []*machine_learning.Point{p1, p2}
+	points := []*machine_learning.Point{p1, p2} */
 
-	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 100)
-	w := gd.Run(1)
+	wTrue := machine_learning.GenerateTestVector(5, 5)
+	fmt.Println(wTrue)
+	points := machine_learning.GenerateTestData(5, 5, 10000, wTrue)
+
+	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
+	w := gd.Run(5)
 	fmt.Println(w)
 }

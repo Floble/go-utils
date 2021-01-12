@@ -120,7 +120,7 @@ func (selection *Selection) RandomSelect(nums []int, p, r, i int) int {
 func (selection *Selection) randomPartition(numbers []int, p, r int) int {
 	rand.Seed(time.Now().UnixNano())
 	i := r - p + 1
-	i = rand.Intn(r - p + 1) + p
+	i = rand.Intn(i) + p
 
 	tmp := numbers[r]
 	numbers[r] = numbers[i]
