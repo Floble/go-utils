@@ -176,7 +176,11 @@ func main() {
 	fmt.Println(wTrue)
 	points := machine_learning.GenerateTestData(5, 5, 10000, wTrue)
 
-	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
+	/* gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
 	w := gd.Run(5)
+	fmt.Println(w) */
+
+	sgd := machine_learning.NewStochasticGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.1, 10000)	
+	w := sgd.Run(5)
 	fmt.Println(w)
 }
