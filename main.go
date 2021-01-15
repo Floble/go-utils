@@ -180,7 +180,7 @@ func main() {
 	w := gd.Run(5)
 	fmt.Println(w) */
 
-	sgd := machine_learning.NewStochasticGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.1, 10000)	
+	sgd := machine_learning.NewStochasticGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.1, 10000, len(points))	
 	w := sgd.Run(5)
 	fmt.Println(w)
 }
