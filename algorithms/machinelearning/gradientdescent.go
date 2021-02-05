@@ -2,8 +2,6 @@ package machinelearning
 
 import (
 	helper "go-utils/helper"
-	"math/rand"
-	"time"
 	vector "github.com/atedja/go-vector"
 )
 
@@ -56,8 +54,8 @@ func GenerateTestVector(d, max int) vector.Vector {
 	data := make([]float64, 0)
 
 	for i := 0; i < d; i++ {
-		rand := generateRandomNumber(max)
-		data = append(data, float64(rand))
+		rand := helper.RandomFloat(max)
+		data = append(data, rand)
 	}
 
 	v.Set(data)
@@ -76,12 +74,4 @@ func GenerateTestData(d, max, amount int, w vector.Vector) []*Point {
 	}
 
 	return points
-}
-
-func generateRandomNumber(max int) int {
-	rand.Seed(time.Now().UnixNano())
-	i := max - 1 + 1
-	i = rand.Intn(i) + 1
-
-	return i
 }

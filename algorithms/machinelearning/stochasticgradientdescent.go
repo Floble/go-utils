@@ -3,6 +3,7 @@ package machinelearning
 import (
 	"math"
 	vector "github.com/atedja/go-vector"
+	helper "go-utils/helper"
 )
 
 type StochasticGradientDescent struct {
@@ -29,7 +30,7 @@ func (sgd *StochasticGradientDescent) gradient(w vector.Vector, d int) vector.Ve
 	gradient.Zero()
 
 	for i := 0; i < sgd.miniBatchSize; i++ {
-		j := generateRandomNumber(len(sgd.data) - 1)
+		j := helper.RandomInt(len(sgd.data) - 1)
 		gradient = vector.Add(gradient, sgd.derivedLossFunction(w, sgd.data[j]))
 	}
 
