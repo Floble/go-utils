@@ -79,30 +79,38 @@ func (nn *NeuralNetwork) init() {
 }
 
 func (nn *NeuralNetwork) feedForward() {
-	addB := func(_, j int, n float64) float64 { return n + nn.bHidden.At(0, j)}
+	addBHidden := func(_, j int, n float64) float64 { return n + nn.bHidden.At(0, j)}
+	addBOutput := func(_, j int, n float64) float64 { return n + nn.bOutput.At(0, j)}
 	applyActivationFunction := func(_, _ int, n float64) float64 { return nn.config.activationFunction(n) }
 
 	hLayerInput := new(mat.Dense)
 	hLayerInput.Mul(nn.input, nn.wHidden)
-	hLayerInput.Apply(addB, hLayerInput)
+	hLayerInput.Apply(addBHidden, hLayerInput)
 	hLayerOutput := new(mat.Dense)
 	hLayerOutput.Apply(applyActivationFunction, hLayerInput)
 
 	oLayerInput := new(mat.Dense)
 	oLayerInput.Mul(hLayerOutput, nn.wOutput)
-	oLayerInput.Apply(addB, oLayerInput)
+	oLayerInput.Apply(addBOutput, oLayerInput)
 	nn.output = new(mat.Dense)
 	nn.output.Apply(applyActivationFunction, oLayerInput)
 }
 
 func (nn *NeuralNetwork) backPropagation() {
 	dSSR/dBout = dSSR/doutput * doutput/doLayerInput * doLayerInput/dBout
-	dSSR/dBout = -2 (data - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
+	dSSR/dBout = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
 
 	dSSR/dWOutput = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dWOutput
-	dSSR/dWOutput = - 2 (data - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * hLayerOutput
-	
+	dSSR/dWOutput = - 2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * hLayerOutput
 
+	dSSR/dbHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dbHidden
+	dSSR/dbHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * 1
+
+	dSSR/dwHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dwHidden
+	dSSR/dwHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * input
+	
 	output = sigmoid(oLayerInput)
 	oLayerInput = hLayerOutput * wOutput + bOutput
+	hLayerOutput = sigmoid(hLayerInput)
+	hLayerInput = input * wHidden + bHidden
 }
