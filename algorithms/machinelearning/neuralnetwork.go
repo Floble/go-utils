@@ -96,7 +96,45 @@ func (nn *NeuralNetwork) feedForward() {
 	nn.output.Apply(applyActivationFunction, oLayerInput)
 }
 
-func (nn *NeuralNetwork) backPropagation() {
+func (nn *NeuralNetwork) backPropagation(y, oLayerInput, hLayerInput, hLayerOutput *mat.Dense) {
+	applyDActivationFunction := func(_, _ int, n float64) float64 { return nn.config.dActivationFunction(n) }
+
+	oLayerError := new(mat.Dense)
+	oLayerError.Sub(y, nn.output)
+	oLayerError.Scale(-2.0, oLayerError)
+
+	dOutput := new(mat.Dense)
+	dOutput.Apply(applyDActivationFunction, nn.output)
+
+	dBOut := new(mat.Dense)
+	dBOut.MulElem(oLayerError, dOutput)
+
+	dWOut := new(mat.Dense)
+	dWOut.Mul(hLayerOutput.T(), dBOut)
+	dWOut.Scale(nn.config.learningRate, dWOut)
+	nn.wOutput.Sub(nn.wOutput, dWOut)
+
+
+
+
+
+	dOLayerInput := new(mat.Dense)
+	dOLayerInput.Apply(applyDActivationFunction, oLayerInput)
+
+	dHLayerInput := new(mat.Dense)
+	dHLayerInput.Apply(applyDActivationFunction, hLayerInput)
+
+	oLayerError := new(mat.Dense)
+	oLayerError.Sub(y, nn.output)
+	oLayerError.Scale(-2.0, oLayerError)
+
+	dBOutput := new(mat.Dense)
+	dBOutput.MulElem(oLayerError, dOLayerInput)
+
+	dWOutput := new(mat.Dense)
+	dWOutput.Mul(dBOutput, hLayerOutput)
+
+
 	dSSR/dBout = dSSR/doutput * doutput/doLayerInput * doLayerInput/dBout
 	dSSR/dBout = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
 
