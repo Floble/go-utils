@@ -97,6 +97,23 @@ func (nn *NeuralNetwork) feedForward() {
 }
 
 func (nn *NeuralNetwork) backPropagation(y, oLayerInput, hLayerInput, hLayerOutput *mat.Dense) {
+	/* dSSR/dBout = dSSR/doutput * doutput/doLayerInput * doLayerInput/dBout
+	dSSR/dBout = -2 (labels - output) * sigmoid(output) * (1 - sigmoid(output)) * 1
+
+	dSSR/dWOutput = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dWOutput
+	dSSR/dWOutput = - 2 (labels - output) * sigmoid(output) * (1 - sigmoid(output)) * hLayerOutput
+
+	dSSR/dbHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dbHidden
+	dSSR/dbHidden = -2 (labels - output) * sigmoid(output) * (1 - sigmoid(output)) * wOutput * sigmoid(hLayerOutput) * (1 - sigmoid(hLayerOutput)) * 1
+
+	dSSR/dwHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dwHidden
+	dSSR/dwHidden = -2 (labels - output) * sigmoid(output) * (1 - sigmoid(output)) * wOutput * sigmoid(hLayerOutput) * (1 - sigmoid(hLayerOutput)) * input
+	
+	output = sigmoid(oLayerInput)
+	oLayerInput = hLayerOutput * wOutput + bOutput
+	hLayerOutput = sigmoid(hLayerInput)
+	hLayerInput = input * wHidden + bHidden */
+	
 	applyDActivationFunction := func(_, _ int, n float64) float64 { return nn.config.dActivationFunction(n) }
 
 	oLayerError := new(mat.Dense)
@@ -114,41 +131,15 @@ func (nn *NeuralNetwork) backPropagation(y, oLayerInput, hLayerInput, hLayerOutp
 	dWOut.Scale(nn.config.learningRate, dWOut)
 	nn.wOutput.Sub(nn.wOutput, dWOut)
 
+	dHLayer := new(mat.Dense)
+	dHLayer.Apply(applyDActivationFunction, hLayerOutput)
 
+	dBHidden := new(mat.Dense)
+	dBHidden.Mul(dBOut, nn.wOutput.T())
+	dBHidden.MulElem(dBHidden, dHLayer)
 
-
-
-	dOLayerInput := new(mat.Dense)
-	dOLayerInput.Apply(applyDActivationFunction, oLayerInput)
-
-	dHLayerInput := new(mat.Dense)
-	dHLayerInput.Apply(applyDActivationFunction, hLayerInput)
-
-	oLayerError := new(mat.Dense)
-	oLayerError.Sub(y, nn.output)
-	oLayerError.Scale(-2.0, oLayerError)
-
-	dBOutput := new(mat.Dense)
-	dBOutput.MulElem(oLayerError, dOLayerInput)
-
-	dWOutput := new(mat.Dense)
-	dWOutput.Mul(dBOutput, hLayerOutput)
-
-
-	dSSR/dBout = dSSR/doutput * doutput/doLayerInput * doLayerInput/dBout
-	dSSR/dBout = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
-
-	dSSR/dWOutput = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dWOutput
-	dSSR/dWOutput = - 2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * hLayerOutput
-
-	dSSR/dbHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dbHidden
-	dSSR/dbHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * 1
-
-	dSSR/dwHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dwHidden
-	dSSR/dwHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * input
-	
-	output = sigmoid(oLayerInput)
-	oLayerInput = hLayerOutput * wOutput + bOutput
-	hLayerOutput = sigmoid(hLayerInput)
-	hLayerInput = input * wHidden + bHidden
+	dWHidden := new(mat.Dense)
+	dWHidden.Mul(nn.input.T(), dBHidden)
+	dWHidden.Scale(nn.config.learningRate, dWHidden)
+	nn.wHidden.Sub(nn.wHidden, dWHidden)
 }
