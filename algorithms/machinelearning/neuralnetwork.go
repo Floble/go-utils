@@ -126,6 +126,10 @@ func (nn *NeuralNetwork) backPropagation(y, oLayerInput, hLayerInput, hLayerOutp
 	dBOut := new(mat.Dense)
 	dBOut.MulElem(oLayerError, dOutput)
 
+	newBOut := helper.SumAlongColumn(dBOut)
+	newBOut.Scale(nn.config.learningRate, newBOut)
+	nn.bOutput.Sub(nn.bOutput, newBOut)
+
 	dWOut := new(mat.Dense)
 	dWOut.Mul(hLayerOutput.T(), dBOut)
 	dWOut.Scale(nn.config.learningRate, dWOut)
@@ -137,6 +141,10 @@ func (nn *NeuralNetwork) backPropagation(y, oLayerInput, hLayerInput, hLayerOutp
 	dBHidden := new(mat.Dense)
 	dBHidden.Mul(dBOut, nn.wOutput.T())
 	dBHidden.MulElem(dBHidden, dHLayer)
+
+	newBHidden := helper.SumAlongColumn(dBHidden)
+	newBHidden.Scale(nn.config.learningRate, newBHidden)
+	nn.bHidden.Sub(nn.bHidden, newBHidden)
 
 	dWHidden := new(mat.Dense)
 	dWHidden.Mul(nn.input.T(), dBHidden)
