@@ -167,22 +167,6 @@ func (nn *NeuralNetwork) Train(x, y *mat.Dense) {
 }
 
 func (nn *NeuralNetwork) Predict(x *mat.Dense) *mat.Dense {
-	addBHidden := func(_, j int, n float64) float64 { return n + nn.bHidden.At(0, j)}
-	addBOutput := func(_, j int, n float64) float64 { return n + nn.bOutput.At(0, j)}
-	applyActivationFunction := func(_, _ int, n float64) float64 { return nn.config.activationFunction(n) }
-
-	hLayerInput := new(mat.Dense)
-	hLayerInput.Mul(x, nn.wHidden)
-	hLayerInput.Apply(addBHidden, hLayerInput)
-	hLayerOutput := new(mat.Dense)
-	hLayerOutput.Apply(applyActivationFunction, hLayerInput)
-
-	oLayerInput := new(mat.Dense)
-	oLayerInput.Mul(hLayerOutput, nn.wOutput)
-	oLayerInput.Apply(addBOutput, oLayerInput)
-
-	output := new(mat.Dense)
-	output.Apply(applyActivationFunction, oLayerInput)
-
+	_, _, _, output := nn.feedForward(x)
 	return output
 }
