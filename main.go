@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
 	//architecture "go-utils/algorithms/architecture"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
+	"fmt"
 	machine_learning "go-utils/algorithms/machinelearning"
-	vector "github.com/atedja/go-vector"
 	helper "go-utils/helper"
 )
 
@@ -172,15 +171,25 @@ func main() {
 	p2 := machine_learning.NewPoint(vector.NewWithValues([]float64 {4.0}), 2)
 	points := []*machine_learning.Point{p1, p2} */
 
-	wTrue := machine_learning.GenerateTestVector(5, 5)
+	/* wTrue := machine_learning.GenerateTestVector(5, 5)
 	fmt.Println(wTrue)
 	points := machine_learning.GenerateTestData(5, 5, 10000, wTrue)
 
-	/* gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
+	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
 	w := gd.Run(5)
-	fmt.Println(w) */
+	fmt.Println(w)
 
 	sgd := machine_learning.NewStochasticGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.1, 10000, len(points))	
 	w := sgd.Run(5)
-	fmt.Println(w)
+	fmt.Println(w) */
+	
+	trainInput, trainResult := helper.ReadCSV("algorithms/machinelearning/data/iris_train.csv", 7, []int{4, 5, 6}, 4, 3)
+	testInput, testResult := helper.ReadCSV("algorithms/machinelearning/data/iris_test.csv", 7, []int{4, 5, 6}, 4, 3)
+	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.Sigmoid, helper.DSigmoid)
+	nn := machine_learning.NewNeuralNetwork(config)
+
+	nn.Train(trainInput, trainResult)
+	prediction := nn.Predict(testInput)
+	accuracy := helper.Accuracy(prediction, testResult)
+	fmt.Printf("Accuracy = %0.2f\n", accuracy)
 }

@@ -54,7 +54,7 @@ func GenerateTestVector(d, max int) vector.Vector {
 	data := make([]float64, 0)
 
 	for i := 0; i < d; i++ {
-		rand := helper.RandomFloat(max)
+		rand := helper.RandomFloat(0, float64(max))
 		data = append(data, rand)
 	}
 
