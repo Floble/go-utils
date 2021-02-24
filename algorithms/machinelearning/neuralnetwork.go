@@ -1,6 +1,7 @@
 package machinelearning
 
 // Kudos to https://datadan.io/blog/neural-net-with-go
+// Data for training and testing is obtained from https://github.com/dwhitena/gophernet/tree/master/data
 
 import (
 	"time"

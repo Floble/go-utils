@@ -109,21 +109,12 @@ func ReadCSV(path string, fieldsPerRecord int, resultColumns []int, inputNeurons
 }
 
 func Accuracy(prediction, result *mat.Dense) float64 {
-	var acc int
+	acc := 0
 
-	nums, _ := prediction.Dims()
+	nums, _ := result.Dims()
 
 	for i := 0; i < nums; i++ {
-		row := mat.Row(nil, i, result)
-		var iPrediction int
-		for j, e := range row {
-			if e == 1.0 {
-				iPrediction = j
-				break
-			}
-		}
-
-		if prediction.At(i, iPrediction) == floats.Max(mat.Row(nil, i, prediction)) {
+		if floats.MaxIdx(mat.Row(nil, i, result)) == floats.MaxIdx(mat.Row(nil, i, prediction)) {
 			acc++
 		}
 	}
