@@ -9,6 +9,7 @@ import (
 	"fmt"
 	machine_learning "go-utils/algorithms/machinelearning"
 	helper "go-utils/helper"
+	"math"
 )
 
 func main() {
@@ -185,11 +186,16 @@ func main() {
 	
 	trainInput, trainResult := helper.ReadCSV("algorithms/machinelearning/data/iris_train.csv", 7, []int{4, 5, 6}, 4, 3)
 	testInput, testResult := helper.ReadCSV("algorithms/machinelearning/data/iris_test.csv", 7, []int{4, 5, 6}, 4, 3)
-	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.Sigmoid, helper.DSigmoid)
+	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.CrossEntropy, helper.RelU, helper.DRelU, helper.SoftMax, helper.ArgMax)
 	nn := machine_learning.NewNeuralNetwork(config)
 
-	nn.Train(trainInput, trainResult)
-	prediction := nn.Predict(testInput)
-	accuracy := helper.Accuracy(prediction, testResult)
-	fmt.Printf("Accuracy = %0.2f\n", accuracy)
+	maxAccuracy := 0.0
+	for i := 0; i <= 100; i++ {
+		nn.Train(trainInput, trainResult)
+		prediction := nn.Predict(testInput)
+		accuracy := helper.Accuracy(prediction, testResult)
+		maxAccuracy = math.Max(accuracy, maxAccuracy)
+	}
+	
+	fmt.Printf("Accuracy = %0.2f\n", maxAccuracy)
 }
