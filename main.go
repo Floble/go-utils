@@ -186,7 +186,7 @@ func main() {
 	
 	trainInput, trainResult := helper.ReadCSV("algorithms/machinelearning/data/iris_train.csv", 7, []int{4, 5, 6}, 4, 3)
 	testInput, testResult := helper.ReadCSV("algorithms/machinelearning/data/iris_test.csv", 7, []int{4, 5, 6}, 4, 3)
-	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.CrossEntropy, helper.RelU, helper.DRelU, helper.SoftMax, helper.ArgMax)
+	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.CrossEntropy, helper.Sigmoid, helper.DSigmoid, helper.SoftMax, helper.ArgMax)
 	nn := machine_learning.NewNeuralNetwork(config)
 
 	maxAccuracy := 0.0
