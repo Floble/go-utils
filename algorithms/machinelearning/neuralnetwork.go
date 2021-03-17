@@ -111,16 +111,16 @@ func (nn *NeuralNetwork) backPropagation(x, y, output, oLayerInput, hLayerInput,
 	/* <<<<< Loss Function = SSR >>>>>
 
 	dSSR/dBout = dSSR/doutput * doutput/doLayerInput * doLayerInput/dBout
-	dSSR/dBout = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
+	dSSR/dBout = -2 (y - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * 1
 
 	dSSR/dWOutput = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dWOutput
-	dSSR/dWOutput = - 2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * hLayerOutput
+	dSSR/dWOutput = - 2 (y - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * hLayerOutput
 
 	dSSR/dbHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dbHidden
-	dSSR/dbHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * 1
+	dSSR/dbHidden = -2 (y - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * 1
 
 	dSSR/dwHidden = dSSR/dOutput * dOutput/doLayerInput * doLayerInput/dhLayerOutput * dhLayerOutput/dhLayerInput * dhLayerInput/dwHidden
-	dSSR/dwHidden = -2 (labels - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * input
+	dSSR/dwHidden = -2 (y - output) * sigmoid(oLayerInput) * (1 - sigmoid(oLayerInput)) * wOutput * sigmoid(hLayerInput) * (1 - sigmoid(hLayerInput)) * input
 	
 	output = sigmoid(oLayerInput)
 	oLayerInput = hLayerOutput * wOutput + bOutput
@@ -149,8 +149,7 @@ func (nn *NeuralNetwork) backPropagation(x, y, output, oLayerInput, hLayerInput,
 	oLayerInput = hLayerOutput * wOutput + bOutput 
 	hLayerOutput = sigmoid(hLayerInput) 
 	hLayerInput = input * wHidden + bHidden */
-	
-	nums, _ := x.Dims()
+
 	applyDActivationFunction := func(_, _ int, n float64) float64 { return nn.config.dActivationFunction(n) }
 
 	oLayerError := nn.config.lossFunction(output, y)
@@ -169,24 +168,20 @@ func (nn *NeuralNetwork) backPropagation(x, y, output, oLayerInput, hLayerInput,
 	dBHidden.MulElem(dBHidden, dHLayer)
 
 	newBOut := helper.SumAlongColumn(dBOut)
-	newBOut.Scale(1.0 / float64(nums - 1.0), newBOut)
 	newBOut.Scale(nn.config.learningRate, newBOut)
 	nn.bOutput.Sub(nn.bOutput, newBOut)
 
 	newBHidden := helper.SumAlongColumn(dBHidden)
-	newBHidden.Scale(1.0 / float64(nums - 1.0), newBHidden)
 	newBHidden.Scale(nn.config.learningRate, newBHidden)
 	nn.bHidden.Sub(nn.bHidden, newBHidden)
 
 	dWOut := new(mat.Dense)
 	dWOut.Mul(hLayerOutput.T(), dBOut)
-	dWOut.Scale(1.0 / float64(nums - 1.0), dWOut)
 	dWOut.Scale(nn.config.learningRate, dWOut)
 	nn.wOutput.Sub(nn.wOutput, dWOut)
 
 	dWHidden := new(mat.Dense)
 	dWHidden.Mul(x.T(), dBHidden)
-	dWHidden.Scale(1.0 / float64(nums - 1.0), dWHidden)
 	dWHidden.Scale(nn.config.learningRate, dWHidden)
 	nn.wHidden.Sub(nn.wHidden, dWHidden)
 }
