@@ -8,8 +8,10 @@ import (
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	"fmt"
 	machine_learning "go-utils/algorithms/machinelearning"
-	helper "go-utils/helper"
-	"math"
+	//helper "go-utils/helper"
+	//"math"
+
+	"gonum.org/v1/gonum/mat"
 )
 
 func main() {
@@ -184,9 +186,9 @@ func main() {
 	w := sgd.Run(5)
 	fmt.Println(w) */
 	
-	trainInput, trainResult := helper.ReadCSV("algorithms/machinelearning/data/iris_train.csv", 7, []int{4, 5, 6}, 4, 3)
+	/* trainInput, trainResult := helper.ReadCSV("algorithms/machinelearning/data/iris_train.csv", 7, []int{4, 5, 6}, 4, 3)
 	testInput, testResult := helper.ReadCSV("algorithms/machinelearning/data/iris_test.csv", 7, []int{4, 5, 6}, 4, 3)
-	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 10000, 0.1, helper.CrossEntropy, helper.Sigmoid, helper.DSigmoid, helper.SoftMax, helper.ArgMax)
+	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 225, 0.1, helper.CrossEntropy, helper.Sigmoid, helper.DSigmoid, helper.SoftMax, helper.ArgMax)
 	nn := machine_learning.NewNeuralNetwork(config)
 
 	maxAccuracy := 0.0
@@ -197,5 +199,68 @@ func main() {
 		maxAccuracy = math.Max(accuracy, maxAccuracy)
 	}
 	
-	fmt.Printf("Accuracy = %0.2f\n", maxAccuracy)
+	fmt.Printf("Accuracy = %0.2f\n", maxAccuracy) */
+
+	a := mat.NewDense(2, 1, nil)
+	a.Set(0, 0, 0)
+	a.Set(1, 0, 1)
+
+	b := mat.NewDense(2, 1, nil)
+	b.Set(0, 0, 1)
+	b.Set(1, 0, 2)
+
+	c := mat.NewDense(2, 1, nil)
+	c.Set(0, 0, 1)
+	c.Set(1, 0, 3)
+
+	d := mat.NewDense(2, 1, nil)
+	d.Set(0, 0, 8)
+	d.Set(1, 0, 4)
+
+	e := mat.NewDense(2, 1, nil)
+	e.Set(0, 0, 9)
+	e.Set(1, 0, 3)
+
+	f := mat.NewDense(2, 1, nil)
+	f.Set(0, 0, 8)
+	f.Set(1, 0, 2)
+
+	g := mat.NewDense(2, 1, nil)
+	g.Set(0, 0, 8)
+	g.Set(1, 0, 8)
+
+	h := mat.NewDense(2, 1, nil)
+	h.Set(0, 0, 8)
+	h.Set(1, 0, 6)
+
+	i := mat.NewDense(2, 1, nil)
+	i.Set(0, 0, 5)
+	i.Set(1, 0, 8)
+
+	j := mat.NewDense(2, 1, nil)
+	j.Set(0, 0, 7)
+	j.Set(1, 0, 7)
+
+	k := mat.NewDense(2, 1, nil)
+	k.Set(0, 0, 4)
+	k.Set(1, 0, 7)
+
+	l := mat.NewDense(2, 1, nil)
+	l.Set(0, 0, 3)
+	l.Set(1, 0, 8)
+
+	m := mat.NewDense(2, 1, nil)
+	m.Set(0, 0, 2)
+	m.Set(1, 0, 9)
+
+	n := mat.NewDense(2, 1, nil)
+	n.Set(0, 0, 6)
+	n.Set(1, 0, 9)
+
+	x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
+	km := machine_learning.NewKMeans(3, 100)
+	km.Run(x)
+	loss := km.Loss(x)
+
+	fmt.Println(loss)
 }
