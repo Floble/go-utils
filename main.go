@@ -8,6 +8,8 @@ import (
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	"fmt"
 	machine_learning "go-utils/algorithms/machinelearning"
+	"math"
+
 	//helper "go-utils/helper"
 	//"math"
 
@@ -257,10 +259,29 @@ func main() {
 	n.Set(0, 0, 6)
 	n.Set(1, 0, 9)
 
-	x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
-	km := machine_learning.NewKMeans(3, 100)
-	km.Run(x)
-	loss := km.Loss(x)
+	/* a := mat.NewDense(1, 1, nil)
+	a.Set(0, 0, 0)
 
-	fmt.Println(loss)
+	b := mat.NewDense(1, 1, nil)
+	b.Set(0, 0, 2)
+
+	c := mat.NewDense(1, 1, nil)
+	c.Set(0, 0, 10)
+
+	d := mat.NewDense(1, 1, nil)
+	d.Set(0, 0, 12) */
+
+	x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
+
+	km := machine_learning.NewKMeans(3, 1000)
+	minLoss := math.MaxFloat64
+
+	for i := 0; i < 100; i++ {
+		_, loss := km.Run(x)
+		if loss < minLoss {
+			minLoss = loss
+		}
+	}
+
+	fmt.Println(minLoss)
 }

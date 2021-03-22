@@ -1,12 +1,10 @@
 package machinelearning
 
 import (
-	"fmt"
 	helper "go-utils/helper"
 	"math"
 	"math/rand"
 	"time"
-
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -20,8 +18,6 @@ func NewKMeans(clusters, maxSteps int) *KMeans {
 	km := new(KMeans)
 	km.clusters = clusters
 	km.maxSteps = maxSteps
-	km.centroids = make([]*mat.Dense, clusters)
-	km.assignments = make(map[*mat.Dense][]*mat.Dense, clusters)
 
 	return km
 }
@@ -31,17 +27,16 @@ func (km *KMeans) init(d int) {
 	randGen := rand.New(randSource)
 
 	for i := 0; i < km.clusters; i++ {
-		km.centroids[i] = mat.NewDense(d, 1, nil)
+		km.centroids = append(km.centroids, mat.NewDense(d, 1, nil))
 
 		for j := 0; j < d; j++ {
 			km.centroids[i].Set(j, 0, randGen.Float64())
 		}
 	}
-
-	fmt.Println(km.centroids)
 }
 
 func (km *KMeans) setAssignments(data []*mat.Dense) {
+	km.assignments = make(map[*mat.Dense][]*mat.Dense, 0)
 	applySquared := func(_, _ int, n float64) float64 { return n * n }
 
 	for _, centroid := range km.centroids {
@@ -71,12 +66,16 @@ func (km *KMeans) setAssignments(data []*mat.Dense) {
 }
 
 func (km *KMeans) setCentroids() {
-	km.centroids = make([]*mat.Dense, km.clusters)
-	km.assignments = make(map[*mat.Dense][]*mat.Dense, km.clusters)
+	km.centroids = make([]*mat.Dense, 0)
 
-	for _, assignment := range km.assignments {
-		tmp := new(mat.Dense)
-		tmp.Copy(assignment[0])
+	for centroid, assignment := range km.assignments {
+		if len(assignment) == 0 {
+			km.centroids = append(km.centroids, centroid)
+			continue
+		}
+
+		r, c := assignment[0].Dims()
+		tmp := mat.NewDense(r, c, nil)
 		tmp.Zero()
 
 		for _, date := range assignment {
@@ -88,7 +87,7 @@ func (km *KMeans) setCentroids() {
 	}
 }
 
-func (km *KMeans) Run(x []*mat.Dense) map[*mat.Dense][]*mat.Dense {
+func (km *KMeans) Run(x []*mat.Dense) (map[*mat.Dense][]*mat.Dense, float64) {
 	d, _ := x[0].Dims()
 	km.init(d)
 
@@ -97,10 +96,10 @@ func (km *KMeans) Run(x []*mat.Dense) map[*mat.Dense][]*mat.Dense {
 		km.setCentroids()
 	}
 
-	return km.assignments
+	return km.assignments, km.loss(x)
 }
 
-func (km *KMeans) Loss(x []*mat.Dense) float64 {
+func (km *KMeans) loss(x []*mat.Dense) float64 {
 	applySquared := func(_, _ int, n float64) float64 { return n * n }
 	loss := 0.0
 
@@ -111,10 +110,9 @@ func (km *KMeans) Loss(x []*mat.Dense) float64 {
 			tmp.Apply(applySquared, tmp)
 			tmp = helper.SumAlongColumn(tmp)
 			distance := tmp.At(0, 0)
-			distance = math.Sqrt(distance)
 			loss += distance
 		}
 	}
 
-	return loss
+	return math.Sqrt(loss)
 }

@@ -34,7 +34,7 @@ func SumAlongColumn(m *mat.Dense) *mat.Dense {
 
 	for j := 0; j < c; j++ {
 		tmp := 0.0
-		for i := 0; i < r - 1; i++ {
+		for i := 0; i < r; i++ {
 			tmp += m.At(i, j)
 		}
 		result.Set(0, j, tmp)
