@@ -96,10 +96,10 @@ func (km *KMeans) Run(x []*mat.Dense) (map[*mat.Dense][]*mat.Dense, float64) {
 		km.setCentroids()
 	}
 
-	return km.assignments, km.loss(x)
+	return km.assignments, km.loss()
 }
 
-func (km *KMeans) loss(x []*mat.Dense) float64 {
+func (km *KMeans) loss() float64 {
 	applySquared := func(_, _ int, n float64) float64 { return n * n }
 	loss := 0.0
 
