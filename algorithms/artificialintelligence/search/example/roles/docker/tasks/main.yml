@@ -1,0 +1,66 @@
+---
+- name: install the latest version of Docker-CE
+  become: yes
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+  when: lifecycle == "install"
+
+- name: install the latest version of Docker-CE-CLI
+  become: yes
+  apt:
+    name: docker-ce-cli
+    state: latest
+    update_cache: true
+  when: lifecycle == "install"
+
+- name: remove the installed version of Docker-CE-CLI
+  become: yes
+  apt:
+    name: docker-ce-cli
+    state: absent
+    update_cache: true
+  when: lifecycle == "remove"
+
+- name: remove the installed version of Docker-CE
+  become: yes
+  apt:
+    name: docker-ce
+    state: absent
+    update_cache: true
+  when: lifecycle == "remove"
+
+- name: install the latest version of Docker-CE
+  become: yes
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+  ignore_errors: yes
+  when: lifecycle == "remove"
+
+- name: install the latest version of Docker-CE-CLI
+  become: yes
+  apt:
+    name: docker-ce-cli
+    state: latest
+    update_cache: true
+  ignore_errors: yes
+  when: lifecycle == "remove"
+
+- name: remove the installed version of Docker-CE-CLI
+  become: yes
+  apt:
+    name: docker-ce-cli
+    state: absent
+    update_cache: true
+  when: lifecycle == "remove"
+
+- name: remove the installed version of Docker-CE
+  become: yes
+  apt:
+    name: docker-ce
+    state: absent
+    update_cache: true
+  when: lifecycle == "remove"

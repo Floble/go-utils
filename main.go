@@ -1,18 +1,15 @@
 package main
 
 import (
+	"fmt"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
-	//architecture "go-utils/algorithms/architecture"
+	search "go-utils/algorithms/artificialintelligence/search"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
-	"fmt"
-	machine_learning "go-utils/algorithms/machinelearning"
-	"math"
-
+	//machine_learning "go-utils/algorithms/machinelearning"
 	//helper "go-utils/helper"
 	//"math"
-
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -203,7 +200,7 @@ func main() {
 	
 	fmt.Printf("Accuracy = %0.2f\n", maxAccuracy) */
 
-	a := mat.NewDense(2, 1, nil)
+	/* a := mat.NewDense(2, 1, nil)
 	a.Set(0, 0, 0)
 	a.Set(1, 0, 1)
 
@@ -257,7 +254,7 @@ func main() {
 
 	n := mat.NewDense(2, 1, nil)
 	n.Set(0, 0, 6)
-	n.Set(1, 0, 9)
+	n.Set(1, 0, 9) */
 
 	/* a := mat.NewDense(1, 1, nil)
 	a.Set(0, 0, 0)
@@ -271,7 +268,7 @@ func main() {
 	d := mat.NewDense(1, 1, nil)
 	d.Set(0, 0, 12) */
 
-	x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
+	/* x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
 
 	km := machine_learning.NewKMeans(3, 1000)
 	minLoss := math.MaxFloat64
@@ -283,5 +280,11 @@ func main() {
 		}
 	}
 
-	fmt.Println(minLoss)
+	fmt.Println(minLoss) */
+
+	yuma := search.NewYuma("/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/hosts", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/yuma.yml", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/roles/")
+	yuma.DetermineDeploymentPlan_Backtracking(0, 0, make([]string, len(yuma.GetRoles())))
+	searchTree := yuma.GetSearchTree()
+	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
+	fmt.Printf("SearchTree = %v\n\n", f)
 }

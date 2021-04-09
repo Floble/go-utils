@@ -1,0 +1,14 @@
+---
+- name: install the latest version of APT Transport HTTPS
+  become: yes
+  apt:
+    name: apt-transport-https
+    state: latest
+  when: lifecycle == "install"
+
+- name: remove the installed version of APT Transport HTTPS
+  become: yes
+  apt:
+    name: apt-transport-https
+    state: absent
+  when: lifecycle == "remove"
