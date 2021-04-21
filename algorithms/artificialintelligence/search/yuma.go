@@ -163,15 +163,7 @@ func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dens
 }
 
 func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, target int, memDepth map[int]int, memPath map[int][]string) (int, []string) {
-	fmt.Println(state)
-	fmt.Println(depth)
-	fmt.Println()
-	
 	if _, ok := memDepth[state]; ok {
-		/* fmt.Println(state)
-		fmt.Println(memDepth[state])
-		fmt.Println(memPath[state])
-		fmt.Println() */
 		return memDepth[state], memPath[state]
 	}
 	
@@ -179,10 +171,6 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 		memDepth[state] = depth
 		memPath[state] = make([]string, len(yuma.roles))
 		copy(memPath[state], path)
-		/* fmt.Println(state)
-		fmt.Println(memDepth[state])
-		fmt.Println(memPath[state])
-		fmt.Println() */
 		return memDepth[state], memPath[state]
 	}
 
@@ -208,18 +196,9 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 			copy(minPath, tmpPath)
 		}
 
-		/* fmt.Println(state)
-		fmt.Println(memDepth[state])
-		fmt.Println(memPath[state])
-		fmt.Println() */
 		memDepth[state] = minDepth
 		memPath[state] = minPath
 	}
-
-	/* fmt.Println(memDepth)
-	fmt.Println(memPath)
-	fmt.Println()
-	fmt.Println() */
 
 	return memDepth[state], memPath[state]
 }
