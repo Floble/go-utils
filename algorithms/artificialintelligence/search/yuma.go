@@ -2,7 +2,6 @@ package search
 
 import (
 	"fmt"
-	//"strconv"
 	"io/ioutil"
 	"math"
 	"os"
@@ -124,96 +123,7 @@ func (yuma *Yuma) playRole(roles []string, lifecycle string) bool {
 	return true
 }
 
-/* func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Iterative() bool {
-	yuma.DeploymentPlan[0] = 0
-
-	for d := 1; d <= len(yuma.Roles); d++ {
-		if yuma.DeploymentPlan[d - 1] < int(math.Exp2(float64(d - 1))) - 1 {
-			return false
-		}
-
-		for role, config := range yuma.Roles {
-			if yuma.DeploymentPlan[d - 1] & config != 0 {
-				continue
-			}
-
-			if yuma.playRole(role) {
-				deletePlaybook(yuma.Playbook)
-				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1] | config
-				break
-			} else {
-				deletePlaybook(yuma.Playbook)
-				yuma.DeploymentPlan[d] = yuma.DeploymentPlan[d - 1]
-			}
-		}
-	}
-
-	return yuma.DeploymentPlan[len(yuma.Roles)] == int(math.Exp2(float64(len(yuma.Roles)))) - 1
-}
-
-func (yuma *Yuma) DetermineDeploymentPlan_Greedy_Recursive(state int, depth int) bool {
-	if state == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
-		yuma.DeploymentPlan[depth] = state
-		return true
-	}
-
-	for role, config := range yuma.Roles {
-		if state & config != 0 {
-			continue
-		}
-
-		if yuma.playRole(role) {
-			deletePlaybook(yuma.Playbook)
-			if yuma.DetermineDeploymentPlan_Greedy_Recursive(state | config, depth + 1) {
-				yuma.DeploymentPlan[depth] = state
-				return true
-			} else {
-				return false
-			}
-		} else {
-			deletePlaybook(yuma.Playbook)
-		}
-	}
-
-	return false
-}
-
-func (yuma *Yuma) DetermineDeploymentPlan_Dfs(state int, depth int) bool {
-	if state == int(math.Exp2(float64(len(yuma.Roles)))) - 1 {
-		yuma.DeploymentPlan[depth] = state
-		return true
-	}
-
-	if state < int(math.Exp2(float64(depth))) - 1 {
-		return false
-	}
-
-	result := false
-
-	if state >= int(math.Exp2(float64(depth))) - 1 {
-		for role, config := range yuma.Roles {
-			if state & config != 0 {
-				continue
-			}
-
-			if yuma.playRole(role) {
-				deletePlaybook(yuma.Playbook)
-				if yuma.DetermineDeploymentPlan_Dfs(state | config, depth + 1) {
-					yuma.DeploymentPlan[depth] = state
-					result = result || true
-					return result
-				}
-			} else {
-				deletePlaybook(yuma.Playbook)
-				result = result || yuma.DetermineDeploymentPlan_Dfs(state, depth + 1)
-			}
-		}
-	}
-
-	return result
-} */
-
-func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(state int, depth int, path []string) *mat.Dense {
+func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dense {
 	if yuma.isEndSucc(state) {
 		return yuma.searchTree
 	}
@@ -245,11 +155,73 @@ func (yuma *Yuma) DetermineDeploymentPlan_Backtracking(state int, depth int, pat
 		yuma.playRole(path, "remove")
 		deletePlaybook(yuma.playbook)
 
-		yuma.DetermineDeploymentPlan_Backtracking(successor, depth + 1, path)
-		clearDeploymentplan(path, depth)
+		yuma.BuildSearchTree(successor, depth + 1, path)
+		clearPath(path, depth)
 	}
 
 	return yuma.searchTree
+}
+
+func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, target int, memDepth map[int]int, memPath map[int][]string) (int, []string) {
+	fmt.Println(state)
+	fmt.Println(depth)
+	fmt.Println()
+	
+	if _, ok := memDepth[state]; ok {
+		/* fmt.Println(state)
+		fmt.Println(memDepth[state])
+		fmt.Println(memPath[state])
+		fmt.Println() */
+		return memDepth[state], memPath[state]
+	}
+	
+	if state & target != 0 {
+		memDepth[state] = depth
+		memPath[state] = make([]string, len(yuma.roles))
+		copy(memPath[state], path)
+		/* fmt.Println(state)
+		fmt.Println(memDepth[state])
+		fmt.Println(memPath[state])
+		fmt.Println() */
+		return memDepth[state], memPath[state]
+	}
+
+	if yuma.isEndFail(state, depth) {
+		memDepth[state] = len(yuma.roles) + 1
+		memPath[state] = make([]string, len(yuma.roles))
+		copy(memPath[state], path)
+		return memDepth[state], memPath[state]
+	}
+
+	minDepth := len(yuma.roles)
+	minPath := make([]string, len(yuma.roles))
+	for _, action := range yuma.actions(state) {
+		successor := yuma.successor(state, action)
+		if successor != state {
+			clearPath(path, depth)
+			path[depth] = yuma.configurations[action]
+		}
+
+		tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)
+		if tmpDepth <= minDepth {
+			minDepth = tmpDepth
+			copy(minPath, tmpPath)
+		}
+
+		/* fmt.Println(state)
+		fmt.Println(memDepth[state])
+		fmt.Println(memPath[state])
+		fmt.Println() */
+		memDepth[state] = minDepth
+		memPath[state] = minPath
+	}
+
+	/* fmt.Println(memDepth)
+	fmt.Println(memPath)
+	fmt.Println()
+	fmt.Println() */
+
+	return memDepth[state], memPath[state]
 }
 
 func (yuma *Yuma) PrintDeploymentPlan(deploymentplans [][]string) {
@@ -316,8 +288,8 @@ func stringBuilder(repository string, roles []string, lifecycle string) string {
 	return export
 }
 
-func clearDeploymentplan(deploymentplan []string, depth int) {
-	for i := depth; i < len(deploymentplan); i++ {
-		deploymentplan[i] = ""
+func clearPath(path []string, depth int) {
+	for i := depth; i < len(path); i++ {
+		path[i] = ""
 	}
 }

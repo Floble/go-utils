@@ -283,8 +283,11 @@ func main() {
 	fmt.Println(minLoss) */
 
 	yuma := search.NewYuma("/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/hosts", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/yuma.yml", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/roles/")
-	yuma.DetermineDeploymentPlan_Backtracking(0, 0, make([]string, len(yuma.GetRoles())))
+	yuma.BuildSearchTree(0, 0, make([]string, len(yuma.GetRoles())))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
-	fmt.Printf("SearchTree = %v\n\n", f)
+	fmt.Printf("SearchTree = %v\n\n\n", f)
+	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 4, make(map[int]int, 0), make(map[int][]string))
+	fmt.Println(minDepth)
+	fmt.Println(minPath)
 }
