@@ -287,7 +287,7 @@ func main() {
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
 	fmt.Printf("SearchTree = %v\n\n\n", f)
-	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 2, make(map[int]int, 0), make(map[int][]string))
+	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 4, make(map[int]int, 0), make(map[int][]string))
 	fmt.Println(minDepth)
 	fmt.Println(minPath)
 }

@@ -1,0 +1,37 @@
+---
+- name: add Kubernetes APT key
+  become: yes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+  when: lifecycle == "install"
+
+- name: add Kubernetes APT repository
+  become: yes
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+    filename: "kubernetes"
+  when: lifecycle == "install"
+
+- name: remove Kubernetes APT repository
+  become: yes
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: absent
+    filename: "kubernetes"
+  when: lifecycle == "remove"
+
+- name: remove Kubernetes APT key
+  become: yes
+  apt_key:
+    id: 59FE0256827269DC81578F928B57C5C2836F4BEB
+    state: absent
+  when: lifecycle == "remove"
+
+- name: remove Kubernetes APT key
+  become: yes
+  apt_key:
+    id: 7F92E05B31093BEF5A3C2D38FEEA9169307EA071
+    state: absent
+  when: lifecycle == "remove"
