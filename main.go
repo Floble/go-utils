@@ -5,12 +5,13 @@ import (
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
-	search "go-utils/algorithms/artificialintelligence/search"
+	//search "go-utils/algorithms/artificialintelligence/search"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	//machine_learning "go-utils/algorithms/machinelearning"
 	//helper "go-utils/helper"
+	ec2 "go-utils/cloud/aws/ec2"
 	//"math"
-	"gonum.org/v1/gonum/mat"
+	//"gonum.org/v1/gonum/mat"
 )
 
 func main() {
@@ -282,12 +283,19 @@ func main() {
 
 	fmt.Println(minLoss) */
 
-	yuma := search.NewYuma("/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/hosts", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/yuma.yml", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/roles/")
-	yuma.BuildSearchTree(0, 0, make([]string, len(yuma.GetRoles())))
+	//yuma := search.NewYuma("/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/hosts", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/yuma.yml", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/roles/")
+	/* yuma.BuildSearchTree(0, 0, make([]string, len(yuma.GetRoles())))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
 	fmt.Printf("SearchTree = %v\n\n\n", f)
 	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 4, make(map[int]int, 0), make(map[int][]string))
 	fmt.Println(minDepth)
-	fmt.Println(minPath)
+	fmt.Println(minPath) */
+
+	instance := ec2.NewEC2Instance()
+	publicIP, err := instance.Create()
+	if err != nil {
+		fmt.Println("ERROR")
+	}
+	fmt.Println(publicIP)
 }
