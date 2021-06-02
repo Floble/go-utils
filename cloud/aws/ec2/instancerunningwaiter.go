@@ -1,7 +1,8 @@
 package ec2
 
-// TODO: Delete this once it's supported by the AWS SDK
+// Thanks to Andrew Haines who provided this code to me on GitHub!
 // https://github.com/aws/aws-sdk-go-v2/issues/1159
+// TODO: Delete this once it's supported by the AWS SDK
 
 import (
 	"context"

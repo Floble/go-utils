@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
@@ -293,9 +294,19 @@ func main() {
 	fmt.Println(minPath) */
 
 	instance := ec2.NewEC2Instance()
-	publicIP, err := instance.Create()
-	if err != nil {
-		fmt.Println("ERROR")
+
+	err := instance.Create()
+	for err != nil {
+		fmt.Println("ERROR CREATE")
+		err = instance.Create()
 	}
-	fmt.Println(publicIP)
+
+	fmt.Println(instance.GetPublicIP())
+
+	time.Sleep(1 * time.Minute)
+
+	err = instance.Stop()
+	if err != nil {
+		fmt.Println("ERROR DELETE")
+	}
 }
