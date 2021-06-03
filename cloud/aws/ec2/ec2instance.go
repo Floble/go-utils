@@ -8,6 +8,9 @@ package ec2
 import (
 	"context"
 	"time"
+	"bufio"
+	"os"
+	"os/exec"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -101,7 +104,7 @@ func (instance *EC2Instance) Create() error {
 	return nil
 }
 
-func (instance *EC2Instance) Stop() error {
+func (instance *EC2Instance) Delete() error {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		panic("configuration error, " + err.Error())
@@ -117,6 +120,46 @@ func (instance *EC2Instance) Stop() error {
 
 	_, err = stopInstances(context.TODO(), client, stopInput)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (instance *EC2Instance) AddToKnownHosts() error {
+	cmd := exec.Command("ssh-keyscan", "-H", instance.GetPublicIP())
+	export := ""
+  
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+  
+	scanner := bufio.NewScanner(out)
+	go func() {
+		for scanner.Scan() {
+			export += scanner.Text() + "\n"
+		}
+	}()
+  
+	err = cmd.Start()
+	if err != nil {
+		return err  
+	}
+  
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile("/home/floble/.ssh/known_hosts", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	if _, err := file.WriteString(export); err != nil {
 		return err
 	}
 

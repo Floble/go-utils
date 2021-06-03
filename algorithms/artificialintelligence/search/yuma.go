@@ -2,29 +2,27 @@ package search
 
 import (
 	"fmt"
+	"time"
 	"io/ioutil"
 	"math"
-	"os"
-	"os/exec"
-	"bufio"
 	"gonum.org/v1/gonum/mat"
+	"go-utils/cloud/aws/ec2"
+	iac "go-utils/infrastructureascode"
 )
 
 type Yuma struct {
-	inventory, playbook, repository string
 	roles map[string]int
 	configurations map[int]string
 	searchTree *mat.Dense
+	ansible *iac.Ansible
 }
 
-func NewYuma(inventory, playbook, repository string) *Yuma {
+func NewYuma(ansible *iac.Ansible) *Yuma {
 	yuma := new(Yuma)
-	yuma.inventory = inventory
-	yuma.playbook = playbook
-	yuma.repository = repository
 	yuma.roles = make(map[string]int, 0)
 	yuma.configurations = make(map[int]string, 0)
-	if err := yuma.identifyRoles(repository); err != nil {
+	yuma.ansible = ansible
+	if err := yuma.identifyRoles(yuma.ansible.GetRepository()); err != nil {
 		return nil
 	}
 	yuma.searchTree = mat.NewDense(int(math.Exp2(float64(len(yuma.roles)))), int(math.Exp2(float64(len(yuma.roles) - 1)) + 1), nil)
@@ -86,43 +84,6 @@ func (yuma *Yuma) identifyRoles(path string) error {
 	return nil
 }
 
-func (yuma *Yuma) playRole(roles []string, lifecycle string) bool {
-	if roles[0] == "" {
-		return true
-	}
-
-	err := createPlaybook(yuma.playbook, yuma.repository, roles, lifecycle)
-	if err != nil {
-		return false
-	}
-
-	cmd := exec.Command("ansible-playbook", "-i", yuma.inventory, yuma.playbook)
-  
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-	  return false
-	}
-  
-	scanner := bufio.NewScanner(out)
-	go func() {
-	  for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	  }
-	}()
-  
-	err = cmd.Start()
-	if err != nil {
-	  return false
-	}
-  
-	err = cmd.Wait()
-	if err != nil {
-	  return false
-	}
-
-	return true
-}
-
 func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dense {
 	if yuma.isEndSucc(state) {
 		return yuma.searchTree
@@ -133,17 +94,23 @@ func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dens
 	}
 
 	for _, action := range yuma.actions(state) {
-		yuma.playRole(path, "install")
-		deletePlaybook(yuma.playbook)
+		instance := ec2.NewEC2Instance()
+		err := instance.Create()
+		if err != nil {
+			return nil
+		}
+
+		yuma.ansible.CreateInventory(instance.GetPublicIP())
+		time.Sleep(30 * time.Second)
+		instance.AddToKnownHosts()
+		yuma.ansible.PlayRoles(path, "install")
 
 		role := make([]string, 1)
 		role[0] = yuma.configurations[action]
 
-		if yuma.playRole(role, "install") {
-			deletePlaybook(yuma.playbook)
+		if yuma.ansible.PlayRoles(role, "install") {
 			yuma.searchTree.Set(state, action, float64(state | action))
 		} else {
-			deletePlaybook(yuma.playbook)
 			yuma.searchTree.Set(state, action, float64(state))
 		}
 
@@ -152,8 +119,8 @@ func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dens
 			path[depth] = yuma.configurations[action]
 		}
 
-		yuma.playRole(path, "remove")
-		deletePlaybook(yuma.playbook)
+		instance.Delete()
+		yuma.ansible.DeleteInventory()
 
 		yuma.BuildSearchTree(successor, depth + 1, path)
 		clearPath(path, depth)
@@ -222,49 +189,6 @@ func (yuma *Yuma) GetConfigurations() map[int]string {
 
 func (yuma *Yuma) GetSearchTree() *mat.Dense {
 	return yuma.searchTree
-}
-
-func createPlaybook(playbook string, repository string, roles []string, lifecycle string) error {
-	file, err := os.OpenFile(playbook, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-
-	if _, err := file.WriteString(stringBuilder(repository, roles, lifecycle)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func deletePlaybook(playbook string) error {
-	if err := os.Remove(playbook); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func stringBuilder(repository string, roles []string, lifecycle string) string {
-	export := "---\n"
-	export += "- hosts: Yuma\n"
-	export += "  vars:\n"
-	export += "  - lifecycle: \"" + lifecycle + "\"\n"
-	export += "  roles:\n"
-	switch lifecycle {
-	case "install":
-		for i := 0; i < len(roles); i++ {
-			export += "    - " + repository + roles[i] + "\n"
-		}
-	case "remove":
-		for i := len(roles) - 1; i >= 0; i-- {
-			export += "    - " + repository + roles[i] + "\n"
-		}
-	}
-
-	return export
 }
 
 func clearPath(path []string, depth int) {
