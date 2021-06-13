@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	//"time"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
@@ -285,15 +286,64 @@ func main() {
 
 	fmt.Println(minLoss) */
 
-	ansible := iac.NewAnsible("/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/hosts", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/yuma.yml", "/home/floble/go/src/go-utils/algorithms/artificialintelligence/search/example/roles/")
-	yuma := search.NewYuma(ansible)
+	/* test := []float64{
+		0, 1, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16,
+		0, 0, 1, 0, 5, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 17,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 5, 6, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 20,
+		0, 0, 7, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 21,
+		0, 7, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 22,
+		0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 23,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 17, 16, 0, 20, 0, 0, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 17, 0, 21, 0, 0, 0, 25, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 21, 22, 0, 0, 0, 0, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 23, 0, 0, 0, 0, 0, 29, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 23, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 25, 24, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 25, 0, 29, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 29, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	} */
+	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
+	yuma := search.NewYuma(ansible, nil)
 	yuma.BuildSearchTree(0, 0, make([]string, len(yuma.GetRoles())))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
-	fmt.Printf("SearchTree = %v\n\n\n", f)
-	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 1, make(map[int]int, 0), make(map[int][]string))
-	fmt.Println(minDepth)
-	fmt.Println(minPath)
+	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f)
+	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 16, make(map[int]int, 0), make(map[int][]string))
+
+	export := "\n"
+	export += fmt.Sprint(yuma.GetRoles())
+	export += "\n" + printedSearchTree
+	export += fmt.Sprint(minDepth) + "\n"
+	export += fmt.Sprint(minPath) + "\n\n"
+
+	file, err := os.OpenFile("result.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer file.Close()
+
+	if _, err := file.WriteString(export); err != nil {
+		fmt.Println(err)
+	}
 
 	/* instance := ec2.NewEC2Instance()
 

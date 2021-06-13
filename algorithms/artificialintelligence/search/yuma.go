@@ -17,7 +17,7 @@ type Yuma struct {
 	ansible *iac.Ansible
 }
 
-func NewYuma(ansible *iac.Ansible) *Yuma {
+func NewYuma(ansible *iac.Ansible, searchTreeData []float64) *Yuma {
 	yuma := new(Yuma)
 	yuma.roles = make(map[string]int, 0)
 	yuma.configurations = make(map[int]string, 0)
@@ -25,7 +25,7 @@ func NewYuma(ansible *iac.Ansible) *Yuma {
 	if err := yuma.identifyRoles(yuma.ansible.GetRepository()); err != nil {
 		return nil
 	}
-	yuma.searchTree = mat.NewDense(int(math.Exp2(float64(len(yuma.roles)))), int(math.Exp2(float64(len(yuma.roles) - 1)) + 1), nil)
+	yuma.searchTree = mat.NewDense(int(math.Exp2(float64(len(yuma.roles)))), int(math.Exp2(float64(len(yuma.roles) - 1)) + 1), searchTreeData)
 
 	return yuma
 }
@@ -52,16 +52,8 @@ func (yuma *Yuma) successor(state, action int) int {
 	return int(yuma.searchTree.At(state, action))
 }
 
-func (yuma *Yuma) isEndSucc(state int) bool {
+func (yuma *Yuma) isEnd(state int) bool {
 	if state == int(math.Exp2(float64(len(yuma.roles)))) - 1 {
-		return true
-	} else {
-		return false
-	}
-}
-
-func (yuma *Yuma) isEndFail(state, depth int) bool {
-	if state < int(math.Exp2(float64(depth))) - 1 {
 		return true
 	} else {
 		return false
@@ -85,42 +77,48 @@ func (yuma *Yuma) identifyRoles(path string) error {
 }
 
 func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dense {
-	if yuma.isEndSucc(state) {
-		return yuma.searchTree
-	}
-	
-	if yuma.isEndFail(state, depth) {
+	if yuma.isEnd(state) {
 		return yuma.searchTree
 	}
 
 	for _, action := range yuma.actions(state) {
-		instance := ec2.NewEC2Instance()
-		err := instance.Create()
-		if err != nil {
-			return nil
-		}
+		for i := 0; i < 3; i++ {
+			instance := ec2.NewEC2Instance()
+			err := instance.Create()
+			if err != nil {
+				return nil
+			}
 
-		yuma.ansible.CreateInventory(instance.GetPublicIP())
-		time.Sleep(30 * time.Second)
-		instance.AddToKnownHosts()
-		yuma.ansible.PlayRoles(path, "install")
+			yuma.ansible.CreateInventory(instance.GetPublicIP())
+			time.Sleep(30 * time.Second)
+			instance.AddToKnownHosts()
+			if !yuma.ansible.PlayRoles(path, "install") {
+				instance.Delete()
+				yuma.ansible.DeleteInventory()
+				continue
+			}
 
-		role := make([]string, 1)
-		role[0] = yuma.configurations[action]
+			role := make([]string, 1)
+			role[0] = yuma.configurations[action]
 
-		if yuma.ansible.PlayRoles(role, "install") {
-			yuma.searchTree.Set(state, action, float64(state | action))
-		} else {
-			yuma.searchTree.Set(state, action, float64(state))
+			if yuma.ansible.PlayRoles(role, "install") {
+				instance.Delete()
+				yuma.ansible.DeleteInventory()
+				yuma.searchTree.Set(state, action, float64(state | action))
+				break
+			} else {
+				instance.Delete()
+				yuma.ansible.DeleteInventory()
+				yuma.searchTree.Set(state, action, float64(state))
+			}
 		}
 
 		successor := yuma.successor(state, action)
 		if successor != state {
 			path[depth] = yuma.configurations[action]
+		} else {
+			continue
 		}
-
-		instance.Delete()
-		yuma.ansible.DeleteInventory()
 
 		yuma.BuildSearchTree(successor, depth + 1, path)
 		clearPath(path, depth)
@@ -141,13 +139,6 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 		return memDepth[state], memPath[state]
 	}
 
-	if yuma.isEndFail(state, depth) {
-		memDepth[state] = len(yuma.roles) + 1
-		memPath[state] = make([]string, len(yuma.roles))
-		copy(memPath[state], path)
-		return memDepth[state], memPath[state]
-	}
-
 	minDepth := len(yuma.roles)
 	minPath := make([]string, len(yuma.roles))
 	for _, action := range yuma.actions(state) {
@@ -155,6 +146,8 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 		if successor != state {
 			clearPath(path, depth)
 			path[depth] = yuma.configurations[action]
+		} else {
+			continue
 		}
 
 		tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)

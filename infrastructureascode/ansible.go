@@ -1,8 +1,8 @@
 package infrastructureascode
 
 import (
-	"bufio"
-	"fmt"
+	//"bufio"
+	//"fmt"
 	"os"
 	"os/exec"
 )
@@ -32,19 +32,19 @@ func (ansible *Ansible) PlayRoles(roles []string, lifecycle string) bool {
 
 	cmd := exec.Command("ansible-playbook", "-i", ansible.GetInventory(), ansible.GetPlaybook())
   
-	out, err := cmd.StdoutPipe()
+	_, err = cmd.StdoutPipe()
 	if err != nil {
 		ansible.deletePlaybook()
 		return false
 	}
   
-	scanner := bufio.NewScanner(out)
+	/* scanner := bufio.NewScanner(out)
 	go func() {
 		for scanner.Scan() {
 		  fmt.Println(scanner.Text())
 		}
-	}()
-  
+	}() */
+
 	err = cmd.Start()
 	if err != nil {
 		ansible.deletePlaybook()
@@ -74,6 +74,8 @@ func (ansible *Ansible) CreateInventory(publicIP string) error {
 	export += "yuma1 ansible_host=" + publicIP + " ansible_user=ubuntu\n\n"
 	export += "[all:vars]\n"
 	export += "ansible_python_interpreter=/usr/bin/python3\n"
+	export += "ansible_ssh_common_args='-o StrictHostKeyChecking=no'\n"
+	export += "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'\n"
 	export += "ansible_ssh_private_key_file=~/.ssh/id_rsa_floble"
 
 	if _, err := file.WriteString(export); err != nil {
