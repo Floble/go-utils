@@ -322,43 +322,39 @@ func main() {
 	} */
 	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
 	yuma := search.NewYuma(ansible, nil)
-	yuma.BuildSearchTree(0, 0, make([]string, len(yuma.GetRoles())))
+	yuma.BuildSearchTree(3, 30, 0, 0, make([]string, len(yuma.GetRoles())))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
 	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f)
 	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 16, make(map[int]int, 0), make(map[int][]string))
 
-	export := "\n"
-	export += fmt.Sprint(yuma.GetRoles())
-	export += "\n" + printedSearchTree
-	export += fmt.Sprint(minDepth) + "\n"
-	export += fmt.Sprint(minPath) + "\n\n"
+	exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
 
-	file, err := os.OpenFile("result.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	exportResults := "\n"
+	exportResults += fmt.Sprint(yuma.GetRoles())
+	exportResults += "\n" + printedSearchTree
+	exportResults += fmt.Sprint(minDepth) + "\n"
+	exportResults += fmt.Sprint(minPath) + "\n\n"
+
+	file, err := os.OpenFile("playbook.yml", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	defer file.Close()
 
-	if _, err := file.WriteString(export); err != nil {
+	if _, err := file.WriteString(exportPlaybook); err != nil {
 		fmt.Println(err)
 	}
 
-	/* instance := ec2.NewEC2Instance()
-
-	err := instance.Create()
-	for err != nil {
-		fmt.Println("ERROR CREATE")
-		err = instance.Create()
+	file, err = os.OpenFile("result.txt", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	fmt.Println(instance.GetPublicIP())
+	defer file.Close()
 
-	time.Sleep(1 * time.Minute)
-
-	err = instance.Stop()
-	if err != nil {
-		fmt.Println("ERROR DELETE")
-	} */
+	if _, err := file.WriteString(exportResults); err != nil {
+		fmt.Println(err)
+	}
 }

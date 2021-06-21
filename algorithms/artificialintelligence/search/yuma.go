@@ -1,7 +1,6 @@
 package search
 
 import (
-	"fmt"
 	"time"
 	"io/ioutil"
 	"math"
@@ -76,13 +75,13 @@ func (yuma *Yuma) identifyRoles(path string) error {
 	return nil
 }
 
-func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dense {
+func (yuma *Yuma) BuildSearchTree(sigma int, omega int, state int, depth int, path []string) *mat.Dense {
 	if yuma.isEnd(state) {
 		return yuma.searchTree
 	}
 
 	for _, action := range yuma.actions(state) {
-		for i := 0; i < 3; i++ {
+		for i := 0; i < sigma; i++ {
 			instance := ec2.NewEC2Instance()
 			err := instance.Create()
 			if err != nil {
@@ -90,7 +89,7 @@ func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dens
 			}
 
 			yuma.ansible.CreateInventory(instance.GetPublicIP())
-			time.Sleep(30 * time.Second)
+			time.Sleep(time.Duration(omega) * time.Second)
 			instance.AddToKnownHosts()
 			if !yuma.ansible.PlayRoles(path, "install") {
 				instance.Delete()
@@ -114,14 +113,11 @@ func (yuma *Yuma) BuildSearchTree(state int, depth int, path []string) *mat.Dens
 		}
 
 		successor := yuma.successor(state, action)
-		if successor != state {
+		if successor == state | action {
 			path[depth] = yuma.configurations[action]
-		} else {
-			continue
+			yuma.BuildSearchTree(sigma, omega, successor, depth + 1, path)
+			clearPath(path, depth)
 		}
-
-		yuma.BuildSearchTree(successor, depth + 1, path)
-		clearPath(path, depth)
 	}
 
 	return yuma.searchTree
@@ -143,33 +139,38 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	minPath := make([]string, len(yuma.roles))
 	for _, action := range yuma.actions(state) {
 		successor := yuma.successor(state, action)
-		if successor != state {
+		if successor == state | action {
 			clearPath(path, depth)
 			path[depth] = yuma.configurations[action]
-		} else {
-			continue
-		}
 
-		tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)
-		if tmpDepth <= minDepth {
-			minDepth = tmpDepth
-			copy(minPath, tmpPath)
-		}
+			tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)
+			if tmpDepth <= minDepth {
+				minDepth = tmpDepth
+				copy(minPath, tmpPath)
+			}
 
-		memDepth[state] = minDepth
-		memPath[state] = minPath
+			memDepth[state] = minDepth
+			memPath[state] = minPath
+		}
 	}
 
 	return memDepth[state], memPath[state]
 }
 
-func (yuma *Yuma) PrintDeploymentPlan(deploymentplans [][]string) {
-	for _, deploymentplan := range deploymentplans {
-		for _, role := range deploymentplan {
-			fmt.Println(role)
+func (yuma *Yuma) CreateDeploymentPlan(hosts string, path []string) string {
+	export := ""
+	export += "---\n"
+	export += "- hosts: "
+	export += hosts + "\n"
+	export += "  roles:\n"
+
+	for _, software := range path {
+		if software != "" {
+			export += "    - " + software + "\n"
 		}
-		fmt.Println("------------------")
 	}
+
+	return export
 }
 
 func (yuma *Yuma) GetRoles() map[string]int {
