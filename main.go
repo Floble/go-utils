@@ -322,11 +322,11 @@ func main() {
 	} */
 	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
 	yuma := search.NewYuma(ansible, nil)
-	yuma.BuildSearchTree(3, 30, 0, 0, make([]string, len(yuma.GetRoles())))
+	yuma.BuildSearchTree(3, 30, 0, 0, make([]string, 0))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
 	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f)
-	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, len(yuma.GetRoles())), 16, make(map[int]int, 0), make(map[int][]string))
+	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, 0), 16, make(map[int]int, 0), make(map[int][]string, 0))
 
 	exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
 

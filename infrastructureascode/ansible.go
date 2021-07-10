@@ -1,8 +1,7 @@
 package infrastructureascode
 
 import (
-	//"bufio"
-	//"fmt"
+	"bufio"
 	"os"
 	"os/exec"
 )
@@ -21,7 +20,10 @@ func NewAnsible(inventory, playbook, repository string) *Ansible {
 }
 
 func (ansible *Ansible) PlayRoles(roles []string, lifecycle string) bool {
-	if roles[0] == "" {
+	file, _ := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer file.Close()
+
+	if len(roles) == 0 {
 		return true
 	}
 
@@ -32,18 +34,19 @@ func (ansible *Ansible) PlayRoles(roles []string, lifecycle string) bool {
 
 	cmd := exec.Command("ansible-playbook", "-i", ansible.GetInventory(), ansible.GetPlaybook())
   
-	_, err = cmd.StdoutPipe()
+	out, err := cmd.StdoutPipe()
 	if err != nil {
 		ansible.deletePlaybook()
 		return false
 	}
   
-	/* scanner := bufio.NewScanner(out)
+	scanner := bufio.NewScanner(out)
 	go func() {
 		for scanner.Scan() {
-		  fmt.Println(scanner.Text())
+			file.WriteString(scanner.Text())
 		}
-	}() */
+	}()
+	file.WriteString("\n\n")
 
 	err = cmd.Start()
 	if err != nil {

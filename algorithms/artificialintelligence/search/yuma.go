@@ -91,14 +91,14 @@ func (yuma *Yuma) BuildSearchTree(sigma int, omega int, state int, depth int, pa
 			yuma.ansible.CreateInventory(instance.GetPublicIP())
 			time.Sleep(time.Duration(omega) * time.Second)
 			instance.AddToKnownHosts()
-			if !yuma.ansible.PlayRoles(path, "install") {
+			if len(path) > 0 && !yuma.ansible.PlayRoles(path, "install") {
 				instance.Delete()
 				yuma.ansible.DeleteInventory()
 				continue
 			}
 
-			role := make([]string, 1)
-			role[0] = yuma.configurations[action]
+			role := make([]string, 0)
+			role = append(role, yuma.configurations[action])
 
 			if yuma.ansible.PlayRoles(role, "install") {
 				instance.Delete()
@@ -114,9 +114,9 @@ func (yuma *Yuma) BuildSearchTree(sigma int, omega int, state int, depth int, pa
 
 		successor := yuma.successor(state, action)
 		if successor == state | action {
-			path[depth] = yuma.configurations[action]
+			path = append(path, yuma.configurations[action])
 			yuma.BuildSearchTree(sigma, omega, successor, depth + 1, path)
-			clearPath(path, depth)
+			path = path[:depth]
 		}
 	}
 
@@ -130,7 +130,7 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	
 	if state & target != 0 {
 		memDepth[state] = depth
-		memPath[state] = make([]string, len(yuma.roles))
+		memPath[state] = make([]string, len(path))
 		copy(memPath[state], path)
 		return memDepth[state], memPath[state]
 	}
@@ -140,17 +140,19 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	for _, action := range yuma.actions(state) {
 		successor := yuma.successor(state, action)
 		if successor == state | action {
-			clearPath(path, depth)
-			path[depth] = yuma.configurations[action]
+			path = append(path, yuma.configurations[action])
 
 			tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)
 			if tmpDepth <= minDepth {
 				minDepth = tmpDepth
+				minPath = minPath[:len(tmpPath)]
 				copy(minPath, tmpPath)
 			}
 
 			memDepth[state] = minDepth
 			memPath[state] = minPath
+
+			path = path[:depth]
 		}
 	}
 
@@ -165,9 +167,7 @@ func (yuma *Yuma) CreateDeploymentPlan(hosts string, path []string) string {
 	export += "  roles:\n"
 
 	for _, software := range path {
-		if software != "" {
-			export += "    - " + software + "\n"
-		}
+		export += "    - " + software + "\n"
 	}
 
 	return export

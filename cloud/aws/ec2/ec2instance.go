@@ -58,7 +58,7 @@ func (instance *EC2Instance) Create() error {
 
 	runInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String("ami-05f7491af5eef733a"),
-		InstanceType: types.InstanceTypeT2Large,
+		InstanceType: types.InstanceTypeT2Medium,
 		KeyName: 	  aws.String("Floble"),
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
