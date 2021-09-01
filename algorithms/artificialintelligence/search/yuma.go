@@ -161,18 +161,18 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	return memDepth[state], memPath[state]
 }
 
-func (yuma *Yuma) UCS(target int) ds.MinPriorityQueue {
-	frontier := make(ds.MinPriorityQueue, 0)
-	explored := make(ds.MinPriorityQueue, 0)
-	heap.Init(&frontier)
-	heap.Init(&explored)
+func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
+	frontier := ds.NewMinPriorityQueue()
+	explored := ds.NewMinPriorityQueue()
+	heap.Init(frontier)
+	heap.Init(explored)
 
 	startElement := ds.NewElement(yuma.startState(), 0, 0)
-	heap.Push(&frontier, startElement)
+	heap.Push(frontier, startElement)
 
 	for frontier.Len() > 0 {
-		state := heap.Pop(&frontier).(*ds.Element)
-		explored = append(explored, state)
+		state := heap.Pop(frontier).(*ds.Element)
+		explored.Queue = append(explored.Queue, state)
 		if state.State & target != 0 {
 			return explored
 		}
@@ -185,9 +185,9 @@ func (yuma *Yuma) UCS(target int) ds.MinPriorityQueue {
 			successorElement := ds.NewElement(successor, state.Cost + 1, state.State)
 			index := frontier.Search(successor)
 			if index != -1 {
-				heap.Remove(&frontier, index)
+				heap.Remove(frontier, index)
 			}
-			heap.Push(&frontier, successorElement)
+			heap.Push(frontier, successorElement)
 		}
 	}
 

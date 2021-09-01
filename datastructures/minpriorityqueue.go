@@ -6,7 +6,10 @@ type Element struct {
 	Predecessor int
 }
 
-type MinPriorityQueue []*Element
+type MinPriorityQueue struct {
+	Queue []*Element
+	Elements map[int]int
+}
 
 func NewElement(state, cost, predecessor int) *Element {
 	e := new(Element)
@@ -17,12 +20,20 @@ func NewElement(state, cost, predecessor int) *Element {
 	return e
 }
 
+func NewMinPriorityQueue() *MinPriorityQueue {
+	mpq := new(MinPriorityQueue)
+	mpq.Queue = make([]*Element, 0)
+	mpq.Elements = make(map[int]int, 0)
+
+	return mpq
+}
+
 func (mpq MinPriorityQueue) Len() int { 
-	return len(mpq) 
+	return len(mpq.Queue) 
 }
 
 func (mpq MinPriorityQueue) Less(i, j int) bool {
-	if mpq[i].Cost < mpq[j].Cost {
+	if mpq.Queue[i].Cost < mpq.Queue[j].Cost {
 		return true
 	} else {
 		return false
@@ -30,28 +41,28 @@ func (mpq MinPriorityQueue) Less(i, j int) bool {
 }
 
 func (mpq MinPriorityQueue) Swap(i, j int) {
-	tmp := mpq[i]
-	mpq[i] = mpq[j]
-	mpq[j] = tmp
+	tmp := mpq.Queue[i]
+	mpq.Queue[i] = mpq.Queue[j]
+	mpq.Queue[j] = tmp
 }
 
 func (mpq *MinPriorityQueue) Pop() interface{} {
 	tmp := *mpq
 
-	l := len(*mpq)
-	element := tmp[l - 1]
-	*mpq = tmp[0 : l - 1]
+	l := len(mpq.Queue)
+	element := tmp.Queue[l - 1]
+	mpq.Queue = tmp.Queue[0 : l - 1]
 
 	return element
 }
 
 func (mpq *MinPriorityQueue) Push(x interface{}) {
 	element := x.(*Element)
-	*mpq = append(*mpq, element)
+	mpq.Queue = append(mpq.Queue, element)
 }
 
 func (mpq *MinPriorityQueue) Search(x interface{}) int {
-	for i, e := range *mpq {
+	for i, e := range mpq.Queue {
 		if e.State == x {
 			return i
 		}
