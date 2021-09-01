@@ -125,7 +125,7 @@ func (yuma *Yuma) BuildSearchTree(sigma int, omega int, state int, depth int, pa
 	return yuma.searchTree
 }
 
-func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, target int, memDepth map[int]int, memPath map[int][]string) (int, []string) {
+func (yuma *Yuma) DetermineExecutionOrder_DynamicProgramming(state int, depth int, path []string, target int, memDepth map[int]int, memPath map[int][]string) (int, []string) {
 	if _, ok := memDepth[state]; ok {
 		return memDepth[state], memPath[state]
 	}
@@ -144,7 +144,7 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 		if successor == state | action {
 			path = append(path, yuma.configurations[action])
 
-			tmpDepth, tmpPath := yuma.DetermineExecutionOrder(successor, depth + 1, path, target, memDepth, memPath)
+			tmpDepth, tmpPath := yuma.DetermineExecutionOrder_DynamicProgramming(successor, depth + 1, path, target, memDepth, memPath)
 			if tmpDepth <= minDepth {
 				minDepth = tmpDepth
 				minPath = minPath[:len(tmpPath)]
@@ -161,7 +161,7 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	return memDepth[state], memPath[state]
 }
 
-func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
+func (yuma *Yuma) DetermineExecutionOrder_UniformCostSearch(target int) (int, []string) {
 	frontier := ds.NewMinPriorityQueue()
 	explored := ds.NewMinPriorityQueue()
 	heap.Init(frontier)
@@ -175,7 +175,7 @@ func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
 		explored.Queue = append(explored.Queue, state)
 		explored.Elements[state.State] = len(explored.Queue) - 1
 		if state.State & target != 0 {
-			return explored
+			return yuma.FormatExecutionOrder_UniformCostSearch(explored)
 		}
 
 		for _, action := range yuma.actions(state.State) {
@@ -193,7 +193,27 @@ func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
 		}
 	}
 
-	return explored
+	return yuma.FormatExecutionOrder_UniformCostSearch(explored)
+}
+
+func (yuma *Yuma) FormatExecutionOrder_UniformCostSearch(explored *ds.MinPriorityQueue) (int, []string) {
+	executionOrder := make([]string, explored.Queue[len(explored.Queue) - 1].Cost)
+	e := explored.Pop().(*ds.Element)
+	minCost := e.Cost
+	executionOrder[len(executionOrder) - 1] = yuma.configurations[e.State &^ e.Predecessor]
+	j := len(executionOrder) - 2
+	predecessor := e.Predecessor
+
+	for len(explored.Queue) != 0 {
+		e = explored.Pop().(*ds.Element)
+		if e.State == predecessor && e.State != yuma.startState() {
+			executionOrder[j] = yuma.configurations[e.State &^ e.Predecessor]
+			j -= 1
+			predecessor = e.Predecessor
+		}
+	}
+
+	return minCost, executionOrder
 }
 
 func (yuma *Yuma) CreateDeploymentPlan(hosts string, path []string) string {

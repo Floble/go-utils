@@ -1,6 +1,7 @@
 package datastructures
 
-import "fmt"
+// Parts of this code were obtained from the following blog post
+// https://hackernoon.com/today-i-learned-using-priority-queue-in-golang-6f71868902b7
 
 type Element struct {
 	State int
@@ -71,20 +72,6 @@ func (mpq *MinPriorityQueue) Search(x interface{}) int {
 	if i, ok := mpq.Elements[x.(int)]; ok {
 		return i
 	}
-	
-	
-	/* for i, e := range mpq.Queue {
-		if e.State == x {
-			return i
-		}
-	} */
 
 	return -1
-}
-
-func (mpq *MinPriorityQueue) Print() {
-	for i, e := range mpq.Queue {
-		fmt.Printf("%d:%d ", e.State, i)
-	}
-	fmt.Printf("\n")
 }

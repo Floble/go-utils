@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	//"os"
+	"os"
 	//"time"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
-	datastructs "go-utils/datastructures"
+	//datastructs "go-utils/datastructures"
 	search "go-utils/algorithms/artificialintelligence/search"
 	iac "go-utils/infrastructureascode"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
@@ -14,7 +14,7 @@ import (
 	//helper "go-utils/helper"
 	//ec2 "go-utils/cloud/aws/ec2"
 	//"math"
-	//"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/mat"
 )
 
 func main() {
@@ -296,13 +296,13 @@ func main() {
 	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
 	yuma := search.NewYuma(ansible, test)
 	//yuma.BuildSearchTree(3, 30, 0, 0, make([]string, 0))
-	/* searchTree := yuma.GetSearchTree()
+	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
-	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f) */
+	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f)
 	//minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, 0), 16, make(map[int]int, 0), make(map[int][]string, 0))
-	mpq := yuma.UCS(4)
+	minDepth, minPath := yuma.DetermineExecutionOrder_UniformCostSearch(2)
 
-	/* exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
+	exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
 
 	exportResults := "\n"
 	exportResults += fmt.Sprint(yuma.GetRoles())
@@ -330,14 +330,5 @@ func main() {
 
 	if _, err := file.WriteString(exportResults); err != nil {
 		fmt.Println(err)
-	} */
-
-	for mpq.Len() != 0 {
-		e := mpq.Pop().(*datastructs.Element)
-		fmt.Println(e.State)
-		fmt.Println(e.Predecessor)
-		fmt.Println("++++++++++++++")
 	}
-
-	fmt.Println(yuma.GetRoles())
 }
