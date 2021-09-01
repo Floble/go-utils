@@ -173,6 +173,7 @@ func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
 	for frontier.Len() > 0 {
 		state := heap.Pop(frontier).(*ds.Element)
 		explored.Queue = append(explored.Queue, state)
+		explored.Elements[state.State] = len(explored.Queue) - 1
 		if state.State & target != 0 {
 			return explored
 		}
@@ -186,6 +187,7 @@ func (yuma *Yuma) UCS(target int) *ds.MinPriorityQueue {
 			index := frontier.Search(successor)
 			if index != -1 {
 				heap.Remove(frontier, index)
+				delete(frontier.Elements, successor)
 			}
 			heap.Push(frontier, successorElement)
 		}

@@ -300,7 +300,7 @@ func main() {
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
 	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f) */
 	//minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, 0), 16, make(map[int]int, 0), make(map[int][]string, 0))
-	mpq := yuma.UCS(1)
+	mpq := yuma.UCS(4)
 
 	/* exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
 

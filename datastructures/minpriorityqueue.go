@@ -1,5 +1,7 @@
 package datastructures
 
+import "fmt"
+
 type Element struct {
 	State int
 	Cost int
@@ -41,6 +43,9 @@ func (mpq MinPriorityQueue) Less(i, j int) bool {
 }
 
 func (mpq MinPriorityQueue) Swap(i, j int) {
+	mpq.Elements[mpq.Queue[i].State] = j
+	mpq.Elements[mpq.Queue[j].State] = i
+	
 	tmp := mpq.Queue[i]
 	mpq.Queue[i] = mpq.Queue[j]
 	mpq.Queue[j] = tmp
@@ -48,25 +53,38 @@ func (mpq MinPriorityQueue) Swap(i, j int) {
 
 func (mpq *MinPriorityQueue) Pop() interface{} {
 	tmp := *mpq
-
 	l := len(mpq.Queue)
 	element := tmp.Queue[l - 1]
 	mpq.Queue = tmp.Queue[0 : l - 1]
+	delete(mpq.Elements, element.State)
 
 	return element
 }
 
 func (mpq *MinPriorityQueue) Push(x interface{}) {
 	element := x.(*Element)
+	mpq.Elements[x.(*Element).State] = len(mpq.Queue)
 	mpq.Queue = append(mpq.Queue, element)
 }
 
 func (mpq *MinPriorityQueue) Search(x interface{}) int {
-	for i, e := range mpq.Queue {
+	if i, ok := mpq.Elements[x.(int)]; ok {
+		return i
+	}
+	
+	
+	/* for i, e := range mpq.Queue {
 		if e.State == x {
 			return i
 		}
-	}
+	} */
 
 	return -1
+}
+
+func (mpq *MinPriorityQueue) Print() {
+	for i, e := range mpq.Queue {
+		fmt.Printf("%d:%d ", e.State, i)
+	}
+	fmt.Printf("\n")
 }
