@@ -1,12 +1,14 @@
 package search
 
 import (
-	"time"
+	"container/heap"
+	"go-utils/cloud/aws/ec2"
+	ds "go-utils/datastructures"
+	iac "go-utils/infrastructureascode"
 	"io/ioutil"
 	"math"
+	"time"
 	"gonum.org/v1/gonum/mat"
-	"go-utils/cloud/aws/ec2"
-	iac "go-utils/infrastructureascode"
 )
 
 type Yuma struct {
@@ -157,6 +159,39 @@ func (yuma *Yuma) DetermineExecutionOrder(state int, depth int, path []string, t
 	}
 
 	return memDepth[state], memPath[state]
+}
+
+func (yuma *Yuma) UCS(target int) ds.MinPriorityQueue {
+	frontier := make(ds.MinPriorityQueue, 0)
+	explored := make(ds.MinPriorityQueue, 0)
+	heap.Init(&frontier)
+	heap.Init(&explored)
+
+	startElement := ds.NewElement(yuma.startState(), 0, 0)
+	heap.Push(&frontier, startElement)
+
+	for frontier.Len() > 0 {
+		state := heap.Pop(&frontier).(*ds.Element)
+		explored = append(explored, state)
+		if state.State & target != 0 {
+			return explored
+		}
+
+		for _, action := range yuma.actions(state.State) {
+			successor := yuma.successor(state.State, action)
+			if explored.Search(successor) != -1 {
+				continue
+			}
+			successorElement := ds.NewElement(successor, state.Cost + 1, state.State)
+			index := frontier.Search(successor)
+			if index != -1 {
+				heap.Remove(&frontier, index)
+			}
+			heap.Push(&frontier, successorElement)
+		}
+	}
+
+	return explored
 }
 
 func (yuma *Yuma) CreateDeploymentPlan(hosts string, path []string) string {

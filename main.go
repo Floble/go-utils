@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"os"
+	//"os"
 	//"time"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
-	//datastructs "go-utils/datastructures"
+	datastructs "go-utils/datastructures"
 	search "go-utils/algorithms/artificialintelligence/search"
 	iac "go-utils/infrastructureascode"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
@@ -14,7 +14,7 @@ import (
 	//helper "go-utils/helper"
 	//ec2 "go-utils/cloud/aws/ec2"
 	//"math"
-	"gonum.org/v1/gonum/mat"
+	//"gonum.org/v1/gonum/mat"
 )
 
 func main() {
@@ -23,13 +23,11 @@ func main() {
 	result1 := insertionSort.Sort(test1)
 	fmt.Println("InsertionSort:")
 	fmt.Println(result1)
-
 	test2 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	mergeSort := sorting.NewMergeSort()
 	result2 := mergeSort.Sort(test2, 0, len(test2)-1)
 	fmt.Println("MergeSort:")
 	fmt.Println(result2)
-
 	test3 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	bst := datastructs.NewBinarySearchTree()
 	nodes := make(map[int]*datastructs.Node)
@@ -44,7 +42,6 @@ func main() {
 	fmt.Println("Tree after Deletion:")
 	bst.Delete(nodes[3])
 	bst.Print(bst.Root)
-
 	test4 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	stack := datastructs.NewStack()
 	for _, e := range test4 {
@@ -58,7 +55,6 @@ func main() {
 		}
 		fmt.Println(e)
 	}
-
 	test5 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	queue := datastructs.NewQueue()
 	for _, e := range test5 {
@@ -72,7 +68,6 @@ func main() {
 		}
 		fmt.Println(e)
 	}
-
 	test6 := []int{3, 2, 4, 1, 5, 8, 12, 0}
 	list := datastructs.NewLinkedList()
 	for _, e := range test6 {
@@ -81,7 +76,6 @@ func main() {
 	list.Delete(8)
 	fmt.Println("LinkedList:")
 	list.Print()
-
 	s := "adsgwadsxdsgwadsgz"
 	p := "dsgwadsgz"
 	fmt.Println("HFSDFSDFSDAFSFSFSFSF")
@@ -91,7 +85,6 @@ func main() {
 	fmt.Println(shifts) */
 
 	/* yuma := architecture.NewYuma("/home/floble/go/src/go-utils/algorithms/architecture/example/hosts", "/home/floble/go/src/go-utils/algorithms/architecture/example/build.yml", "/home/floble/go/src/go-utils/algorithms/architecture/example/roles/")
-
 	fmt.Println("Role name - configuration:")
 	for role, config := range yuma.Roles {
 		fmt.Printf("%s", role)
@@ -99,22 +92,18 @@ func main() {
 		fmt.Printf("%b", config)
 		fmt.Println()
 	}
-
 	fmt.Println()
 	fmt.Println()
-
 	//result := yuma.DetermineDeploymentPlan_Backtracking(0, 0)
 	//result := yuma.DetermineDeploymentPlan_Dfs(0, 0)
 	//result := yuma.DetermineDeploymentPlan_Greedy_Recursive(0, 0)
 	result := yuma.DetermineDeploymentPlan_Greedy_Iterative()
-
 	if result {
 		fmt.Println("All Ansible roles are included in the deploymentplan")
 	} else {
 		fmt.Println("The deploymentplan does not include all Ansible roles")
 	}
 	fmt.Println()
-
 	fmt.Println("Deploymentplan (configurations):")
 	for i := 1; i < len(yuma.DeploymentPlan); i++ {
 		fmt.Printf("%d", i)
@@ -122,29 +111,23 @@ func main() {
 		fmt.Printf("%b", yuma.DeploymentPlan[i])
 		fmt.Println()
 	}
-
 	fmt.Println()
 	fmt.Println()
 	fmt.Println("Deploymentplan (role names):")
-
 	yuma.PrintDeploymentPlan() */
 
 	/* test6 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
-
 	heap := datastructs.NewHeap(test6)
 	heap.Sort()
-
 	for _, n := range heap.Array {
 		fmt.Println(n)
 	} */
 
 	/* test7 := []int{4, 1, 3, 2, 16, 9, 10, 14, 8, 7}
-
 	pq := datastructs.NewMaxPriorityQueue(test7)
 	pq.Heap.BuildMaxHeap()
 	
 	pq.Insert(21)
-
 	fmt.Println(pq.Maximum()) */
 
 	/* test8 := []int{3, 2, 4, 1, 5, 8, 12, 0}
@@ -180,11 +163,9 @@ func main() {
 	/* wTrue := machine_learning.GenerateTestVector(5, 5)
 	fmt.Println(wTrue)
 	points := machine_learning.GenerateTestData(5, 5, 10000, wTrue)
-
 	gd := machine_learning.NewGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.01, 10000)	
 	w := gd.Run(5)
 	fmt.Println(w)
-
 	sgd := machine_learning.NewStochasticGradientDescent(points, func(w vector.Vector, p *machine_learning.Point) vector.Vector { derevative := p.X.Clone(); derevative.Scale(2 * (helper.Float64(vector.Dot(w, p.X)) - p.Y)); return derevative }, 0.1, 10000, len(points))	
 	w := sgd.Run(5)
 	fmt.Println(w) */
@@ -193,7 +174,6 @@ func main() {
 	testInput, testResult := helper.ReadCSV("algorithms/machinelearning/data/iris_test.csv", 7, []int{4, 5, 6}, 4, 3)
 	config := machine_learning.NewNeuralNetworkConfig(4, 3, 3, 225, 0.1, helper.CrossEntropy, helper.Sigmoid, helper.DSigmoid, helper.SoftMax, helper.ArgMax)
 	nn := machine_learning.NewNeuralNetwork(config)
-
 	maxAccuracy := 0.0
 	for i := 0; i <= 100; i++ {
 		nn.Train(trainInput, trainResult)
@@ -207,83 +187,64 @@ func main() {
 	/* a := mat.NewDense(2, 1, nil)
 	a.Set(0, 0, 0)
 	a.Set(1, 0, 1)
-
 	b := mat.NewDense(2, 1, nil)
 	b.Set(0, 0, 1)
 	b.Set(1, 0, 2)
-
 	c := mat.NewDense(2, 1, nil)
 	c.Set(0, 0, 1)
 	c.Set(1, 0, 3)
-
 	d := mat.NewDense(2, 1, nil)
 	d.Set(0, 0, 8)
 	d.Set(1, 0, 4)
-
 	e := mat.NewDense(2, 1, nil)
 	e.Set(0, 0, 9)
 	e.Set(1, 0, 3)
-
 	f := mat.NewDense(2, 1, nil)
 	f.Set(0, 0, 8)
 	f.Set(1, 0, 2)
-
 	g := mat.NewDense(2, 1, nil)
 	g.Set(0, 0, 8)
 	g.Set(1, 0, 8)
-
 	h := mat.NewDense(2, 1, nil)
 	h.Set(0, 0, 8)
 	h.Set(1, 0, 6)
-
 	i := mat.NewDense(2, 1, nil)
 	i.Set(0, 0, 5)
 	i.Set(1, 0, 8)
-
 	j := mat.NewDense(2, 1, nil)
 	j.Set(0, 0, 7)
 	j.Set(1, 0, 7)
-
 	k := mat.NewDense(2, 1, nil)
 	k.Set(0, 0, 4)
 	k.Set(1, 0, 7)
-
 	l := mat.NewDense(2, 1, nil)
 	l.Set(0, 0, 3)
 	l.Set(1, 0, 8)
-
 	m := mat.NewDense(2, 1, nil)
 	m.Set(0, 0, 2)
 	m.Set(1, 0, 9)
-
 	n := mat.NewDense(2, 1, nil)
 	n.Set(0, 0, 6)
 	n.Set(1, 0, 9) */
 
 	/* a := mat.NewDense(1, 1, nil)
 	a.Set(0, 0, 0)
-
 	b := mat.NewDense(1, 1, nil)
 	b.Set(0, 0, 2)
-
 	c := mat.NewDense(1, 1, nil)
 	c.Set(0, 0, 10)
-
 	d := mat.NewDense(1, 1, nil)
 	d.Set(0, 0, 12) */
 
 	/* x := []*mat.Dense {a, b, c, d, e, f, g, h, i, j, k, l, m, n}
-
 	km := machine_learning.NewKMeans(3, 1000)
 	minLoss := math.MaxFloat64
-
 	for i := 0; i < 100; i++ {
 		_, loss := km.Run(x)
 		if loss < minLoss {
 			minLoss = loss
 		}
 	}
-
 	fmt.Println(minLoss) */
 
 	/* test := []float64{
@@ -320,15 +281,28 @@ func main() {
 		0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	} */
-	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
-	yuma := search.NewYuma(ansible, nil)
-	yuma.BuildSearchTree(3, 30, 0, 0, make([]string, 0))
-	searchTree := yuma.GetSearchTree()
-	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
-	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f)
-	minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, 0), 16, make(map[int]int, 0), make(map[int][]string, 0))
 
-	exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
+	test := []float64 {
+		0, 1, 0, 0, 4,
+		0, 0, 1, 0, 5,
+		0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0,
+		0, 5, 6, 0, 0,
+		0, 0, 7, 0, 0,
+		0, 7, 0, 0, 0,
+		0, 0, 0, 0, 0,
+	}
+
+	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
+	yuma := search.NewYuma(ansible, test)
+	//yuma.BuildSearchTree(3, 30, 0, 0, make([]string, 0))
+	/* searchTree := yuma.GetSearchTree()
+	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
+	printedSearchTree := fmt.Sprintf("\nSearchTree = %v\n\n\n", f) */
+	//minDepth, minPath := yuma.DetermineExecutionOrder(0, 0, make([]string, 0), 16, make(map[int]int, 0), make(map[int][]string, 0))
+	mpq := yuma.UCS(1)
+
+	/* exportPlaybook := yuma.CreateDeploymentPlan("yuma", minPath)
 
 	exportResults := "\n"
 	exportResults += fmt.Sprint(yuma.GetRoles())
@@ -356,5 +330,14 @@ func main() {
 
 	if _, err := file.WriteString(exportResults); err != nil {
 		fmt.Println(err)
+	} */
+
+	for mpq.Len() != 0 {
+		e := mpq.Pop().(*datastructs.Element)
+		fmt.Println(e.State)
+		fmt.Println(e.Predecessor)
+		fmt.Println("++++++++++++++")
 	}
+
+	fmt.Println(yuma.GetRoles())
 }
