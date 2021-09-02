@@ -163,24 +163,24 @@ func (yuma *Yuma) DetermineExecutionOrder_DynamicProgramming(state int, depth in
 
 func (yuma *Yuma) DetermineExecutionOrder_UniformCostSearch(target int) (int, []string) {
 	frontier := ds.NewMinPriorityQueue()
-	explored := ds.NewMinPriorityQueue()
 	heap.Init(frontier)
-	heap.Init(explored)
+	explored := make([]*ds.Element, 0)
+	exploredElements := make(map[int]int, 0)
 
 	startElement := ds.NewElement(yuma.startState(), 0, 0)
 	heap.Push(frontier, startElement)
 
 	for frontier.Len() > 0 {
 		state := heap.Pop(frontier).(*ds.Element)
-		explored.Queue = append(explored.Queue, state)
-		explored.Elements[state.State] = len(explored.Queue) - 1
+		explored = append(explored, state)
+		exploredElements[state.State] = len(explored) - 1
 		if state.State & target != 0 {
 			return yuma.FormatExecutionOrder_UniformCostSearch(explored)
 		}
 
 		for _, action := range yuma.actions(state.State) {
 			successor := yuma.successor(state.State, action)
-			if explored.Search(successor) != -1 {
+			if _, ok := exploredElements[successor]; ok {
 				continue
 			}
 			successorElement := ds.NewElement(successor, state.Cost + 1, state.State)
@@ -196,16 +196,16 @@ func (yuma *Yuma) DetermineExecutionOrder_UniformCostSearch(target int) (int, []
 	return yuma.FormatExecutionOrder_UniformCostSearch(explored)
 }
 
-func (yuma *Yuma) FormatExecutionOrder_UniformCostSearch(explored *ds.MinPriorityQueue) (int, []string) {
-	executionOrder := make([]string, explored.Queue[len(explored.Queue) - 1].Cost)
-	e := explored.Pop().(*ds.Element)
+func (yuma *Yuma) FormatExecutionOrder_UniformCostSearch(explored []*ds.Element) (int, []string) {
+	executionOrder := make([]string, explored[len(explored) - 1].Cost)
+	e := explored[len(explored) - 1]
 	minCost := e.Cost
 	executionOrder[len(executionOrder) - 1] = yuma.configurations[e.State &^ e.Predecessor]
 	j := len(executionOrder) - 2
 	predecessor := e.Predecessor
 
-	for len(explored.Queue) != 0 {
-		e = explored.Pop().(*ds.Element)
+	for i := len(explored) - 2; i >= 0; i-- {
+		e = explored[i]
 		if e.State == predecessor && e.State != yuma.startState() {
 			executionOrder[j] = yuma.configurations[e.State &^ e.Predecessor]
 			j -= 1
