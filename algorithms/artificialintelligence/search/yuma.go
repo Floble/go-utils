@@ -2,6 +2,7 @@ package search
 
 import (
 	"container/heap"
+	"fmt"
 	"go-utils/cloud/aws/ec2"
 	ds "go-utils/datastructures"
 	iac "go-utils/infrastructureascode"
@@ -87,6 +88,7 @@ func (yuma *Yuma) BuildSearchTree(sigma int, omega int, state int, depth int, pa
 			instance := ec2.NewEC2Instance()
 			err := instance.Create()
 			if err != nil {
+				fmt.Println(err)
 				return nil
 			}
 
@@ -240,10 +242,4 @@ func (yuma *Yuma) GetConfigurations() map[int]string {
 
 func (yuma *Yuma) GetSearchTree() *mat.Dense {
 	return yuma.searchTree
-}
-
-func clearPath(path []string, depth int) {
-	for i := depth; i < len(path); i++ {
-		path[i] = ""
-	}
 }
