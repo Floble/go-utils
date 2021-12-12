@@ -41,10 +41,10 @@ type EC2DescribeInstancesAPI interface {
 		optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
 }
 
-type EC2StopInstancesAPI interface {
-	StopInstances(ctx context.Context,
-		params *ec2.StopInstancesInput,
-		optFns ...func(*ec2.Options)) (*ec2.StopInstancesOutput, error)
+type EC2TerminateInstancesAPI interface {
+	TerminateInstances(ctx context.Context,
+		params *ec2.TerminateInstancesInput,
+		optFns ...func(*ec2.Options)) (*ec2.TerminateInstancesOutput, error)
 }
 
 func (instance *EC2Instance) Create() error {
@@ -111,14 +111,14 @@ func (instance *EC2Instance) Delete() error {
 	}
 
 	client := ec2.NewFromConfig(cfg)
-	
-	stopInput := &ec2.StopInstancesInput{
+
+	terminateInput := &ec2.TerminateInstancesInput{
 		InstanceIds: []string{
 			instance.id,
 		},
 	}
 
-	_, err = stopInstances(context.TODO(), client, stopInput)
+	_, err = terminateInstances(context.TODO(), client, terminateInput)
 	if err != nil {
 		return err
 	}
@@ -178,8 +178,8 @@ func getInstances(c context.Context, api EC2DescribeInstancesAPI, input *ec2.Des
 	return api.DescribeInstances(c, input)
 }
 
-func stopInstances(c context.Context, api EC2StopInstancesAPI, input *ec2.StopInstancesInput) (*ec2.StopInstancesOutput, error) {
-    return api.StopInstances(c, input)
+func terminateInstances(c context.Context, api EC2TerminateInstancesAPI, input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
+    return api.TerminateInstances(c, input)
 }
 
 func (instance *EC2Instance) GetID() string {

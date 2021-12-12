@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	//"time"
+	//"fmt"
+	//"os"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
+	"fmt"
 	search "go-utils/algorithms/artificialintelligence/search"
 	iac "go-utils/infrastructureascode"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
@@ -14,7 +14,7 @@ import (
 	//helper "go-utils/helper"
 	//ec2 "go-utils/cloud/aws/ec2"
 	//"math"
-	"gonum.org/v1/gonum/mat"
+	//"gonum.org/v1/gonum/mat"
 )
 
 func main() {
@@ -363,8 +363,8 @@ func main() {
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	} */
 
-	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
-	yuma := search.NewYuma(ansible, nil)
+	/* ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
+	yuma := search.NewYuma(ansible, nil, nil)
 	yuma.BuildSearchTree(3, 30, 0, 0, make([]string, 0))
 	searchTree := yuma.GetSearchTree()
 	f := mat.Formatted(searchTree, mat.Prefix("             "), mat.Squeeze())
@@ -399,6 +399,15 @@ func main() {
 	defer file.Close()
 
 	if _, err := file.WriteString(exportResults); err != nil {
+		fmt.Println(err)
+	} */
+
+	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
+	yuma := search.NewYuma(ansible, nil, nil)
+	if err := yuma.LearnActionValues_QLearning(2, 0.5, 1.0, 0.1, 3, 30, 50); err != nil {
+		fmt.Println(err)
+	}
+	if err := yuma.DeriveOptimalPolicy(2); err != nil {
 		fmt.Println(err)
 	}
 }
