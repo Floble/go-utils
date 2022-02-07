@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
@@ -18,7 +17,7 @@ import (
 )
 
 // InstanceRunningWaiterOptions are waiter options for InstanceRunningWaiter
-type InstanceRunningWaiterOptions struct {
+type EC2InstanceRunningWaiterOptions struct {
 
 	// Set of options to modify how an operation is invoked. These apply to all
 	// operations invoked for this client. Use functional options on operation call to
@@ -50,15 +49,15 @@ type InstanceRunningWaiterOptions struct {
 }
 
 // InstanceRunningWaiter defines the waiters for InstanceRunning
-type InstanceRunningWaiter struct {
+type EC2InstanceRunningWaiter struct {
 	client ec2.DescribeInstancesAPIClient
 
-	options InstanceRunningWaiterOptions
+	options EC2InstanceRunningWaiterOptions
 }
 
 // NewInstanceRunningWaiter constructs a InstanceRunningWaiter.
-func NewInstanceRunningWaiter(client ec2.DescribeInstancesAPIClient, optFns ...func(*InstanceRunningWaiterOptions)) *InstanceRunningWaiter {
-	options := InstanceRunningWaiterOptions{}
+func NewEC2InstanceRunningWaiter(client ec2.DescribeInstancesAPIClient, optFns ...func(*EC2InstanceRunningWaiterOptions)) *EC2InstanceRunningWaiter {
+	options := EC2InstanceRunningWaiterOptions{}
 	options.MinDelay = 15 * time.Second
 	options.MaxDelay = 600 * time.Second
 	options.Retryable = instanceRunningStateRetryable
@@ -66,7 +65,7 @@ func NewInstanceRunningWaiter(client ec2.DescribeInstancesAPIClient, optFns ...f
 	for _, fn := range optFns {
 		fn(&options)
 	}
-	return &InstanceRunningWaiter{
+	return &EC2InstanceRunningWaiter{
 		client:  client,
 		options: options,
 	}
@@ -75,7 +74,7 @@ func NewInstanceRunningWaiter(client ec2.DescribeInstancesAPIClient, optFns ...f
 // Wait calls the waiter function for InstanceRunning waiter. The maxWaitDur is the
 // maximum wait duration the waiter will wait. The maxWaitDur is required and must
 // be greater than zero.
-func (w *InstanceRunningWaiter) Wait(ctx context.Context, params *ec2.DescribeInstancesInput, maxWaitDur time.Duration, optFns ...func(*InstanceRunningWaiterOptions)) error {
+func (w *EC2InstanceRunningWaiter) Wait(ctx context.Context, params *ec2.DescribeInstancesInput, maxWaitDur time.Duration, optFns ...func(*EC2InstanceRunningWaiterOptions)) error {
 	if maxWaitDur <= 0 {
 		return fmt.Errorf("maximum wait time for waiter must be greater than zero")
 	}

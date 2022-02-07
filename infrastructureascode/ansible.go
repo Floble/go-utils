@@ -2,6 +2,7 @@ package infrastructureascode
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 )
@@ -19,53 +20,38 @@ func NewAnsible(inventory, playbook, repository string) *Ansible {
 	return ansible
 }
 
-func (ansible *Ansible) PlayRoles(roles []string, lifecycle string) bool {
-	file, _ := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	defer file.Close()
-
-	if len(roles) == 0 {
-		return true
-	}
-
-	err := ansible.createPlaybook(roles, lifecycle)
-	if err != nil {
-		return false
-	}
-
-	cmd := exec.Command("ansible-playbook", "-i", ansible.GetInventory(), ansible.GetPlaybook())
-  
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		ansible.deletePlaybook()
-		return false
-	}
-  
-	scanner := bufio.NewScanner(out)
-	go func() {
-		for scanner.Scan() {
-			file.WriteString(scanner.Text())
-		}
-	}()
-	file.WriteString("\n\n")
-
-	err = cmd.Start()
-	if err != nil {
-		ansible.deletePlaybook()
-		return false
-	}
-  
-	err = cmd.Wait()
-	if err != nil {
-		ansible.deletePlaybook()
-		return false
-	}
-
-	ansible.deletePlaybook()
-
-	return true
+func (ansible *Ansible) GetRepository() string {
+	return ansible.repository
 }
 
-func (ansible *Ansible) CreateInventory(publicIP string) error {
+func (ansible *Ansible) SetPlaybook(playbook string) {
+	ansible.playbook = playbook
+}
+
+func (ansible *Ansible) CreateExecutionOrder(pathPrefix string, roles []string, lifecycle string) error {
+	file, err := os.OpenFile(ansible.GetPlaybook(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	if _, err := file.WriteString(ansible.stringBuilder(pathPrefix, roles, lifecycle)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ansible *Ansible) DeleteExecutionOrder() error {
+	if err := os.Remove(ansible.GetPlaybook()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (ansible *Ansible) CreateEnvironmentDescription(description interface{}) error {
 	file, err := os.OpenFile(ansible.GetInventory(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -74,7 +60,7 @@ func (ansible *Ansible) CreateInventory(publicIP string) error {
 	defer file.Close()
 
 	export := "[Yuma]\n"
-	export += "yuma1 ansible_host=" + publicIP + " ansible_user=ubuntu\n\n"
+	export += "yuma1 ansible_host=" + fmt.Sprintf("%v", description) + " ansible_user=ubuntu\n\n"
 	export += "[all:vars]\n"
 	export += "ansible_python_interpreter=/usr/bin/python3\n"
 	export += "ansible_ssh_common_args='-o StrictHostKeyChecking=no'\n"
@@ -88,7 +74,7 @@ func (ansible *Ansible) CreateInventory(publicIP string) error {
 	return nil
 }
 
-func (ansible *Ansible) DeleteInventory() error {
+func (ansible *Ansible) RemoveEnvironmentDescription() error {
 	if err := os.Remove(ansible.GetInventory()); err != nil {
 		return err
 	}
@@ -96,43 +82,66 @@ func (ansible *Ansible) DeleteInventory() error {
 	return nil
 }
 
-func (ansible *Ansible) createPlaybook(roles []string, lifecycle string) error {
-	file, err := os.OpenFile(ansible.GetPlaybook(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-
+func (ansible *Ansible) Execute(pathPrefix string, roles []string, lifecycle string) bool {
+	file, _ := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
 
-	if _, err := file.WriteString(ansible.stringBuilder(roles, lifecycle)); err != nil {
-		return err
+	if len(roles) == 0 {
+		return true
 	}
 
-	return nil
-}
-
-func (ansible *Ansible) deletePlaybook() error {
-	if err := os.Remove(ansible.GetPlaybook()); err != nil {
-		return err
+	err := ansible.CreateExecutionOrder(pathPrefix, roles, lifecycle)
+	if err != nil {
+		return false
 	}
 
-	return nil
+	cmd := exec.Command("ansible-playbook", "-i", ansible.GetInventory(), ansible.GetPlaybook())
+  
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		ansible.DeleteExecutionOrder()
+		return false
+	}
+  
+	scanner := bufio.NewScanner(out)
+	go func() {
+		for scanner.Scan() {
+			file.WriteString(scanner.Text())
+		}
+	}()
+	file.WriteString("\n\n")
+
+	err = cmd.Start()
+	if err != nil {
+		ansible.DeleteExecutionOrder()
+		return false
+	}
+  
+	err = cmd.Wait()
+	if err != nil {
+		ansible.DeleteExecutionOrder()
+		return false
+	}
+
+	ansible.DeleteExecutionOrder()
+
+	return true
 }
 
-func (ansible *Ansible) stringBuilder(roles []string, lifecycle string) string {
+func (ansible *Ansible) stringBuilder(pathPrefix string, roles []string, lifecycle string) string {
 	export := "---\n"
-	export += "- hosts: Yuma\n"
+	export += "- hosts: all\n"
 	export += "  vars:\n"
 	export += "  - lifecycle: \"" + lifecycle + "\"\n"
 	export += "  roles:\n"
 	switch lifecycle {
 	case "install":
 		for i := 0; i < len(roles); i++ {
-			export += "    - " + ansible.GetRepository() + roles[i] + "\n"
+			export += "    - " + pathPrefix + ansible.GetRepository() + roles[i] + "\n"
 		}
 	case "remove":
 		for i := len(roles) - 1; i >= 0; i-- {
-			export += "    - " + ansible.GetRepository() + roles[i] + "\n"
+			export += "    - " + pathPrefix + ansible.GetRepository() + roles[i] + "\n"
 		}
 	}
 
@@ -145,8 +154,4 @@ func (ansible *Ansible) GetInventory() string {
 
 func (ansible *Ansible) GetPlaybook() string {
 	return ansible.playbook
-}
-
-func (ansible *Ansible) GetRepository() string {
-	return ansible.repository
 }

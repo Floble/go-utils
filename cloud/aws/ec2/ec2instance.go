@@ -54,7 +54,7 @@ func (instance *EC2Instance) Create() error {
 	}
 
 	client := ec2.NewFromConfig(cfg)
-	waiter := NewInstanceRunningWaiter(client)
+	waiter := NewEC2InstanceRunningWaiter(client)
 
 	runInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String("ami-05f7491af5eef733a"),
@@ -152,7 +152,7 @@ func (instance *EC2Instance) AddToKnownHosts() error {
 		return err
 	}
 
-	file, err := os.OpenFile("/home/floble/.ssh/known_hosts", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("/Users/floble/.ssh/known_hosts", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
