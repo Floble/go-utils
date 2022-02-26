@@ -104,8 +104,8 @@ func (yuma *Yuma) Actions(state int) []int {
 }
 
 func (yuma *Yuma) LearnDependencies() error {
-	target := int(math.Exp2(float64(len(yuma.GetSubprocesses())))) - 1
-	//target := 2
+	//target := int(math.Exp2(float64(len(yuma.GetSubprocesses())))) - 1
+	target := 2
 
 	if err := yuma.GetRationalThinking().Learn(target); err != nil {
 		return err
@@ -115,7 +115,7 @@ func (yuma *Yuma) LearnDependencies() error {
 }
 
 func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
-	target := 16
+	target := 2
 
 	mEO := yuma.GetRationalThinking().Solve(target)
 	yuma.GetEnvironment().GetExecutor().SetPlaybook("playbook.yml")

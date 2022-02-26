@@ -12,11 +12,11 @@ import (
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	//machine_learning "go-utils/algorithms/machinelearning"
 	//helper "go-utils/helper"
-	//ec2 "go-utils/cloud/aws/ec2"
+	ec2 "go-utils/cloud/aws/ec2"
 	//"math"
 	//"gonum.org/v1/gonum/mat"
 	yp "go-utils/algorithms/artificialintelligence/agents/yuma"
-	"go-utils/molecule"
+	//"go-utils/molecule"
 )
 
 func main() {
@@ -416,17 +416,19 @@ func main() {
 	} */
 
 	yuma := yp.NewYuma()
-	ansible := iac.NewAnsible("", "molecule_example/molecule/default/converge.yml", "roles/")
-	//ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
-	molecule := molecule.NewMolecule(yuma, ansible, 30, 3, "molecule_example")
-	//ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
+	//ansible := iac.NewAnsible("", "molecule_example/molecule/default/converge.yml", "roles/")
+	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
+	//molecule := molecule.NewMolecule(yuma, ansible, 30, 3, "molecule_example")
+	ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
 	//policy := yp.NewEpsilonGreedyPolicy(0.1)
+	policy := yp.NewGreedyPolicy()
 	//rationalThinking := yp.NewDoubleQLearning(yuma, policy, 2000, 0.5, 1)
 	//rationalThinking := yp.NewQLearning(yuma, policy, 1000, 0.5, 1)
-	rationalThinking := yp.NewSearch(yuma)
+	rationalThinking := yp.NewTreeBackup(yuma, policy, 1000, 0.5, 1, len(yuma.GetSubprocesses()) + 1)
+	//rationalThinking := yp.NewSearch(yuma)
 
-	//policy.SetRationalThinking(rationalThinking)
-	if err := yuma.SetEnvironment(molecule); err != nil {
+	policy.SetRationalThinking(rationalThinking)
+	if err := yuma.SetEnvironment(ec2); err != nil {
 		fmt.Println(err)
 	}
 	yuma.SetRationalThinking(rationalThinking)

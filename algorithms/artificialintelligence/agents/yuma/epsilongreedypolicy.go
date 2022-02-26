@@ -28,6 +28,17 @@ func (egp *EpsilonGreedyPolicy) GetSuggestions() map[int][]randutil.Choice {
 	return egp.suggestions
 }
 
+func (egp *EpsilonGreedyPolicy) GetWeight(state int, action int) int {
+	choices := egp.GetSuggestions()[state]
+	for _, c := range choices {
+		if c.Item == action {
+			return c.Weight
+		}
+	}
+
+	return 0
+}
+
 func (egp *EpsilonGreedyPolicy) GetEpsilon() float64 {
 	return egp.epsilon
 }
