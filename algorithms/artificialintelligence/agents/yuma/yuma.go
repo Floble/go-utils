@@ -3,6 +3,7 @@ package yuma
 import (
 	"io/ioutil"
 	"math"
+	"sync"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -103,15 +104,26 @@ func (yuma *Yuma) Actions(state int) []int {
 	return actions
 }
 
-func (yuma *Yuma) LearnDependencies() error {
-	//target := int(math.Exp2(float64(len(yuma.GetSubprocesses())))) - 1
-	target := 2
+func (yuma *Yuma) LearnDependencies() <-chan error {
+	var wg sync.WaitGroup
 
-	if err := yuma.GetRationalThinking().Learn(target); err != nil {
-		return err
+	//target := int(math.Exp2(float64(len(yuma.GetSubprocesses())))) - 1
+	
+	errs := make(chan error, 1)
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		wg.Add(1)
+		i := i
+		go func() {
+			defer wg.Done()
+            if err := yuma.GetRationalThinking().Learn(i); err != nil {
+				errs <- err
+			}
+        }()
 	}
 
-	return nil
+	wg.Wait()
+
+	return errs
 }
 
 func (yuma *Yuma) DetermineMinimalExecutionOrder() error {

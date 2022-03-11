@@ -12,7 +12,8 @@ import (
 
 type TreeBackup struct {
 	yuma *Yuma
-	policy Policy
+	behaviorPolicy Policy
+	targetPolicy Policy
 	memory *mat.Dense
 	episodes int
 	alpha float64
@@ -25,10 +26,11 @@ type Decision struct {
 	action int
 }
 
-func NewTreeBackup(yuma *Yuma, policy Policy, episodes int, alpha float64, gamma float64, n int) *TreeBackup {
+func NewTreeBackup(yuma *Yuma, behaviorPolicy Policy, targetPolicy Policy, episodes int, alpha float64, gamma float64, n int) *TreeBackup {
 	tb := new(TreeBackup)
 	tb.yuma = yuma
-	tb.policy = policy
+	tb.behaviorPolicy = behaviorPolicy
+	tb.targetPolicy = targetPolicy
 	tb.episodes = episodes
 	tb.alpha = alpha
 	tb.gamma = gamma
@@ -53,8 +55,12 @@ func (tb *TreeBackup) GetMemory() *mat.Dense {
 	return tb.memory
 }
 
-func (tb *TreeBackup) GetPolicy() Policy {
-	return tb.policy
+func (tb *TreeBackup) GetBehaviorPolicy() Policy {
+	return tb.behaviorPolicy
+}
+
+func (tb *TreeBackup) GetTargetPolicy() Policy {
+	return tb.targetPolicy
 }
 
 func (tb *TreeBackup) GetEpisodes() int {
@@ -71,6 +77,10 @@ func (tb *TreeBackup) GetGamma() float64 {
 
 func (tb *TreeBackup) GetN() int {
 	return tb.n
+}
+
+func (tb *TreeBackup) SetN(n int) {
+	tb.n = n
 }
 
 func (decision *Decision) GetState() int {
@@ -93,7 +103,8 @@ func (tb *TreeBackup) Learn(target int) error {
 	rand.Seed(time.Now().Unix())
 
 	model := tb.GetYuma().GetModel()
-	policy := tb.GetPolicy()
+	behaviorPolicy := tb.GetBehaviorPolicy()
+	targetPolicy := tb.GetTargetPolicy()
 
 	var err error
 	var success bool
@@ -101,7 +112,7 @@ func (tb *TreeBackup) Learn(target int) error {
 	var successor int
 	
 	exportResults := fmt.Sprintln(tb.GetYuma().GetSubprocesses()) + "\n"
-	if err = tb.log(exportResults, "results.txt"); err != nil {
+	if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 		return err
 	}
 	exportResults = ""
@@ -110,7 +121,8 @@ func (tb *TreeBackup) Learn(target int) error {
 	tb.initializeQ(model, target)
 	tb.initializeMemory()
 	// Initialize pi to be greedy with respect to Q
-	policy.DerivePolicy(model)
+	behaviorPolicy.DerivePolicy(model)
+	targetPolicy.DerivePolicy(model)
 	// All store and access operations can take their index mod n + 1
 	decisions := make(map[int]*Decision, 0)
 	rewards := make(map[int]float64, 0)
@@ -120,7 +132,7 @@ func (tb *TreeBackup) Learn(target int) error {
 		exportResults += "++++++++++++++++++++++++++\n"
 		exportResults += fmt.Sprintf("Episode: %d\n", i + 1)
 		exportResults += "++++++++++++++++++++++++++\n\n"
-		if err = tb.log(exportResults, "results.txt"); err != nil {
+		if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 			return err
 		}
 		exportResults = ""
@@ -131,12 +143,12 @@ func (tb *TreeBackup) Learn(target int) error {
 		}
 		state, path := tb.initializeState()
 		// Choose an action A0 arbitrarily as a function of S0; Store A0
-		c, _ := randutil.WeightedChoice(policy.GetSuggestions()[state])
+		c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[state])
 		action := c.Item.(int)
 		decisions[0] = NewDecision(state, action)
 
 		// T = infinity
-		terminal := len(tb.GetYuma().GetSubprocesses())
+		terminal := math.MaxInt64
 		var tau int
 
 		// Loop for t = 0, 1, 2, ...
@@ -146,18 +158,17 @@ func (tb *TreeBackup) Learn(target int) error {
 		for tau < terminal - 1 {
 			// Tau is the time whose estimate is being updated
 			tau = t + 1 - tb.GetN()
-
-			f := mat.Formatted(model, mat.Prefix("        "), mat.Squeeze())
-			exportResults += fmt.Sprintf("\nModel = %v\n\n\n", f)
-			exportResults += fmt.Sprintf("T: %d\n", t)
-			exportResults += fmt.Sprintf("S_%d: %d\n", t, decisions[t].GetState())
-			exportResults += fmt.Sprintf("A_%d: %d\n\n", t, decisions[t].GetAction())
-			if err = tb.log(exportResults, "results.txt"); err != nil {
-				return err
-			}
-			exportResults = ""
-
 			if t < terminal {
+				f := mat.Formatted(model, mat.Prefix("        "), mat.Squeeze())
+				exportResults += fmt.Sprintf("\nModel = %v\n\n\n", f)
+				exportResults += fmt.Sprintf("T: %d\n", t)
+				exportResults += fmt.Sprintf("S_%d: %d\n", t, decisions[t].GetState())
+				exportResults += fmt.Sprintf("A_%d: %d\n\n", t, decisions[t].GetAction())
+				if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
+					return err
+				}
+				exportResults = ""
+				
 				// Take action At; observe and store the next reward and state as Rt+1, St+1
 				if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == 0.0 {
 					err, success, reward, successor = tb.GetYuma().GetEnvironment().TakeAction(decisions[t].GetState(), decisions[t].GetAction(), path, success)
@@ -166,10 +177,10 @@ func (tb *TreeBackup) Learn(target int) error {
 					} else if success {
 						path = append(path, tb.GetYuma().GetConfigurations()[decisions[t].GetAction()])
 					}
-					tb.GetMemory().Set(decisions[t].GetState(), decisions[t].GetAction(), reward)
 					decisions[t + 1] = NewDecision(successor, 0)
 					rewards[t + 1] = reward
-					if reward == -10.0 {
+					tb.GetMemory().Set(decisions[t].GetState(), decisions[t].GetAction(), rewards[t + 1])
+					if rewards[t + 1] == -10.0 {
 						tau = t
 					}
 				} else {
@@ -191,7 +202,7 @@ func (tb *TreeBackup) Learn(target int) error {
 				}
 
 				exportResults += "R_" + fmt.Sprintf("%d", t + 1) + ": " + fmt.Sprintf("%f", reward) + "\n\n"
-				if err = tb.log(exportResults, "results.txt"); err != nil {
+				if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
@@ -201,7 +212,7 @@ func (tb *TreeBackup) Learn(target int) error {
 					terminal = t + 1
 				} else {
 					// Choose an action At+1 arbitrarily as a function of St+1; Store At+1
-					c, _ := randutil.WeightedChoice(policy.GetSuggestions()[decisions[t + 1].GetState()])
+					c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
 					action := c.Item.(int)
 					decisions[t + 1].SetAction(action)
 				}
@@ -211,7 +222,7 @@ func (tb *TreeBackup) Learn(target int) error {
 				exportResults += fmt.Sprintf("T: %d\n", t)
 				exportResults += fmt.Sprintf("Terminal: %d\n", terminal)
 				exportResults += fmt.Sprintf("\nTau: %d - State: %d - Action: %d\n\n", tau, decisions[tau].GetState(), decisions[tau].GetAction())
-				if err = tb.log(exportResults, "results.txt"); err != nil {
+				if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
@@ -221,7 +232,7 @@ func (tb *TreeBackup) Learn(target int) error {
 					totalReturn = rewards[terminal]
 					
 					exportResults += fmt.Sprintf("G = %f\n\n", totalReturn)
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
@@ -230,17 +241,17 @@ func (tb *TreeBackup) Learn(target int) error {
 					var totalActionValue float64
 
 					exportResults += fmt.Sprintf("G = %f + %f * (0 ", rewards[t + 1], tb.GetGamma())
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 
 					for _, action := range tb.GetYuma().Actions(decisions[t + 1].GetState()) {
-						weight := float64(policy.GetWeight(decisions[t + 1].GetState(), action)) / 10.0
+						weight := float64(targetPolicy.GetWeight(decisions[t + 1].GetState(), action)) / 10.0
 						totalActionValue += float64(weight) * model.At(decisions[t + 1].GetState(), action)
 
 						exportResults += fmt.Sprintf("+ %f * %f", weight, model.At(decisions[t + 1].GetState(), action))
-						if err = tb.log(exportResults, "results.txt"); err != nil {
+						if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 							return err
 						}
 						exportResults = ""
@@ -248,7 +259,7 @@ func (tb *TreeBackup) Learn(target int) error {
 					totalReturn = rewards[t + 1] + tb.GetGamma() * totalActionValue
 
 					exportResults += fmt.Sprintf(") = %f\n\n", totalReturn)
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
@@ -257,7 +268,7 @@ func (tb *TreeBackup) Learn(target int) error {
 				k := int(math.Min(float64(t), float64(terminal - 1)))
 				for i := k; i >= tau + 1; i-- {
 					exportResults += fmt.Sprintf("S_%d: %d\n", k, decisions[k].GetState())
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
@@ -266,42 +277,42 @@ func (tb *TreeBackup) Learn(target int) error {
 					var totalActionValue float64
 
 					exportResults += fmt.Sprintf("G = %f + %f * (0", rewards[k], tb.GetGamma())
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 
-					for _, action := range tb.GetYuma().Actions(decisions[t + 1].GetState()) {
+					for _, action := range tb.GetYuma().Actions(decisions[k].GetState()) {
 						if action == decisions[k].GetAction() {
 							continue
 						}
-						weight := float64(policy.GetWeight(decisions[k].GetState(), action)) / 10.0
+						weight := float64(targetPolicy.GetWeight(decisions[k].GetState(), action)) / 10.0
 						totalActionValue += float64(weight) * model.At(decisions[k].GetState(), action)
 
 						exportResults += fmt.Sprintf(" + %f * %f", weight, model.At(decisions[k].GetState(), action))
-						if err = tb.log(exportResults, "results.txt"); err != nil {
+						if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 							return err
 						}
 						exportResults = ""
 					}
 
-					exportResults += fmt.Sprintf(") + %f * %f * %f = ", tb.GetGamma(), float64(policy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0, totalReturn)
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					exportResults += fmt.Sprintf(") + %f * %f * %f = ", tb.GetGamma(), float64(targetPolicy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0, totalReturn)
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 
-					totalReturn = rewards[k] + tb.GetGamma() * totalActionValue + tb.GetGamma() * (float64(policy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0) * totalReturn
+					totalReturn = rewards[k] + tb.GetGamma() * totalActionValue + tb.GetGamma() * (float64(targetPolicy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0) * totalReturn
 
 					exportResults += fmt.Sprintf("%f\n\n", totalReturn)
-					if err = tb.log(exportResults, "results.txt"); err != nil {
+					if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 				}
 				// Q(Stau, Atau) = Q(Stau, Atau) + alpha * (G - Q(Stau, Atau))
 				exportResults += fmt.Sprintf("Q_Update = %f + %f * (%f - %f) = ", model.At(decisions[tau].GetState(), decisions[tau].GetAction()), tb.GetAlpha(), totalReturn, model.At(decisions[tau].GetState(), decisions[tau].GetAction()))
-				if err = tb.log(exportResults, "results.txt"); err != nil {
+				if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
@@ -309,14 +320,15 @@ func (tb *TreeBackup) Learn(target int) error {
 				qUpdate := model.At(decisions[tau].GetState(), decisions[tau].GetAction()) + tb.GetAlpha() * (totalReturn - model.At(decisions[tau].GetState(), decisions[tau].GetAction()))
 
 				exportResults += fmt.Sprintf("%f\n\n", qUpdate)
-				if err = tb.log(exportResults, "results.txt"); err != nil {
+				if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
 
 				model.Set(decisions[tau].GetState(), decisions[tau].GetAction(), qUpdate)
 				// If pi is being learned, then ensure that pi(.|Stau) is greedy wrt Q
-				policy.DerivePolicy(model)
+				behaviorPolicy.DerivePolicy(model)
+				targetPolicy.DerivePolicy(model)
 			}
 			t += 1
 		}
@@ -325,7 +337,13 @@ func (tb *TreeBackup) Learn(target int) error {
 	exportResults += "++++++++++++++++++++++++++\n"
 	exportResults += fmt.Sprintf("Completed Learning\n")
 	exportResults += "++++++++++++++++++++++++++\n\n"
-	if err = tb.log(exportResults, "results.txt"); err != nil {
+	if err = tb.log(exportResults, "results_" + string(target) + ".txt"); err != nil {
+		return err
+	}
+
+	f := mat.Formatted(tb.GetMemory(), mat.Prefix("         "), mat.Squeeze())
+	exportMemory := fmt.Sprintf("\nMemory = %v\n\n\n", f)
+	if err = tb.log(exportMemory, "memory.txt"); err != nil {
 		return err
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type Ansible struct {
@@ -92,6 +93,7 @@ func (ansible *Ansible) Execute(pathPrefix string, roles []string, lifecycle str
 
 	err := ansible.CreateExecutionOrder(pathPrefix, roles, lifecycle)
 	if err != nil {
+		fmt.Println("ANSIBLE ERROR: CREATE EXECUTION ORDER")
 		return false
 	}
 
@@ -99,26 +101,33 @@ func (ansible *Ansible) Execute(pathPrefix string, roles []string, lifecycle str
   
 	out, err := cmd.StdoutPipe()
 	if err != nil {
+		fmt.Println("ANSIBLE ERROR: STDOUT PIPE")
 		ansible.DeleteExecutionOrder()
 		return false
 	}
   
+	unreachable := false
 	scanner := bufio.NewScanner(out)
 	go func() {
 		for scanner.Scan() {
 			file.WriteString(scanner.Text())
+			if strings.Contains(scanner.Text(), "unreachable=1") {
+				fmt.Println("ANSIBLE ERROR: HOST IS UNREACHABLE")
+				unreachable = true
+			}
 		}
 	}()
 	file.WriteString("\n\n")
 
 	err = cmd.Start()
 	if err != nil {
+		fmt.Println("ANSIBLE ERROR: EXECUTE START")
 		ansible.DeleteExecutionOrder()
 		return false
 	}
   
 	err = cmd.Wait()
-	if err != nil {
+	if (err != nil) || unreachable {
 		ansible.DeleteExecutionOrder()
 		return false
 	}

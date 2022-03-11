@@ -1,6 +1,7 @@
 package ec2
 
 import (
+	"fmt"
 	"time"
 	"math"
 	"go-utils/algorithms/artificialintelligence/agents/yuma"
@@ -50,18 +51,34 @@ func (ec2 *EC2) GetSigma() int {
 
 func (ec2 *EC2) CreateInstance(waitingTime int) error {
 	instance := NewEC2Instance()
-	if err := instance.Create(); err != nil {
-		return err
+	created := false
+	for created == false {
+		if err := instance.Create(); err != nil {
+			fmt.Println("EC2 ERROR: CREATE INSTANCE")
+			//return err
+			fmt.Println(err)
+		} else {
+			created = true
+		}
 	}
 
 	if err := ec2.executor.CreateEnvironmentDescription(instance.GetPublicIP()); err != nil {
+		fmt.Println("EC2 ERROR: CREATE ENVIRONMENT FROM DESCRIPTION")
 		return err
 	}
 
 	time.Sleep(time.Duration(waitingTime) * time.Second)
 	
-	if err := instance.AddToKnownHosts(); err != nil {
-		return err
+	added := false
+	for added == false {
+		if err := instance.AddToKnownHosts(); err != nil {
+			fmt.Println("EC2 ERROR: ADD TO KNOWN HOSTS")
+			//return err
+			fmt.Println(err)
+			time.Sleep(time.Duration(waitingTime) * time.Second)
+		} else {
+			added = true
+		}
 	}
 
 	ec2.SetInstance(instance)
@@ -70,10 +87,19 @@ func (ec2 *EC2) CreateInstance(waitingTime int) error {
 }
 
 func (ec2 *EC2) DeleteInstance() error {
-	if err := ec2.GetInstance().Delete(); err != nil {
-		return err
+	deleted := false
+	for deleted == false {
+		if err := ec2.GetInstance().Delete(); err != nil {
+			fmt.Println("EC2 ERROR: DELETE INSTANCE")
+			//return err
+			fmt.Println(err)
+		} else {
+			deleted = true
+		}
 	}
+
 	if err := ec2.executor.RemoveEnvironmentDescription(); err != nil {
+		fmt.Println("EC2 ERROR: REMOVE ENVIRONMENT DESCRIPTION")
 		return err
 	}
 

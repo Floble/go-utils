@@ -6,11 +6,12 @@ package ec2
 // https://aws.github.io/aws-sdk-go-v2/docs/code-examples/ec2/stopinstances/
 
 import (
-	"context"
-	"time"
 	"bufio"
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
+	"time"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -54,7 +55,7 @@ func (instance *EC2Instance) Create() error {
 	}
 
 	client := ec2.NewFromConfig(cfg)
-	waiter := NewEC2InstanceRunningWaiter(client)
+	waiter := ec2.NewInstanceRunningWaiter(client)
 
 	runInput := &ec2.RunInstancesInput{
 		ImageId:      aws.String("ami-05f7491af5eef733a"),
@@ -65,6 +66,20 @@ func (instance *EC2Instance) Create() error {
 	}
 
 	runResult, err := makeInstances(context.TODO(), client, runInput)
+	if err != nil {
+		return err
+	}
+
+	describeInput := &ec2.DescribeInstancesInput{
+		InstanceIds: []string{*runResult.Instances[0].InstanceId},
+	}
+
+	err = waiter.Wait(context.TODO(), describeInput, 5 * time.Minute)
+	if err != nil {
+		return err
+	}
+	
+	describeResult, err := getInstances(context.TODO(), client, describeInput)
 	if err != nil {
 		return err
 	}
@@ -80,20 +95,6 @@ func (instance *EC2Instance) Create() error {
 	}
 
 	_, err = makeTags(context.TODO(), client, tagInput)
-	if err != nil {
-		return err
-	}
-
-	describeInput := &ec2.DescribeInstancesInput{
-		InstanceIds: []string{*runResult.Instances[0].InstanceId},
-	}
-
-	err = waiter.Wait(context.TODO(), describeInput, 5 * time.Minute)
-	if err != nil {
-		return err
-	}
-	
-	describeResult, err := getInstances(context.TODO(), client, describeInput)
 	if err != nil {
 		return err
 	}
@@ -127,11 +128,11 @@ func (instance *EC2Instance) Delete() error {
 }
 
 func (instance *EC2Instance) AddToKnownHosts() error {
-	cmd := exec.Command("ssh-keyscan", "-H", instance.GetPublicIP())
+	cmd := exec.Command("ssh-keyscan", "-t", "rsa", instance.GetPublicIP())
 	export := ""
-  
 	out, err := cmd.StdoutPipe()
 	if err != nil {
+		fmt.Println("ADD TO KNOWN HOSTS ERROR: STDOUT PIPE")
 		return err
 	}
   
@@ -144,22 +145,26 @@ func (instance *EC2Instance) AddToKnownHosts() error {
   
 	err = cmd.Start()
 	if err != nil {
+		fmt.Println("ADD TO KNOWN HOSTS ERROR: COMMAND START")
 		return err  
 	}
   
 	err = cmd.Wait()
 	if err != nil {
+		fmt.Println("ADD TO KNOWN HOSTS ERROR: COMMAND WAIT")
 		return err
 	}
 
 	file, err := os.OpenFile("/Users/floble/.ssh/known_hosts", os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		fmt.Println("ADD TO KNOWN HOSTS ERROR: OPEN FILE")
 		return err
 	}
 
 	defer file.Close()
 
 	if _, err := file.WriteString(export); err != nil {
+		fmt.Println("ADD TO KNOWN HOSTS ERROR: WRITE STRING")
 		return err
 	}
 

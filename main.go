@@ -421,19 +421,25 @@ func main() {
 	//molecule := molecule.NewMolecule(yuma, ansible, 30, 3, "molecule_example")
 	ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
 	//policy := yp.NewEpsilonGreedyPolicy(0.1)
-	policy := yp.NewGreedyPolicy()
+	behaviorPolicy := yp.NewEpsilonGreedyPolicy(0.1)
+	//behaviorPolicy := yp.NewRandomPolicy()
+	targetPolicy := yp.NewGreedyPolicy()
 	//rationalThinking := yp.NewDoubleQLearning(yuma, policy, 2000, 0.5, 1)
 	//rationalThinking := yp.NewQLearning(yuma, policy, 1000, 0.5, 1)
-	rationalThinking := yp.NewTreeBackup(yuma, policy, 1000, 0.5, 1, len(yuma.GetSubprocesses()) + 1)
+	rationalThinking := yp.NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
 	//rationalThinking := yp.NewSearch(yuma)
 
-	policy.SetRationalThinking(rationalThinking)
+	behaviorPolicy.SetRationalThinking(rationalThinking)
+	targetPolicy.SetRationalThinking(rationalThinking)
 	if err := yuma.SetEnvironment(ec2); err != nil {
 		fmt.Println(err)
 	}
+	rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
 	yuma.SetRationalThinking(rationalThinking)
 
-	if err := yuma.LearnDependencies(); err != nil {
+	errs := yuma.LearnDependencies()
+	for i := 0; i < len(errs); i++ {
+		err := <- errs
 		fmt.Println(err)
 	}
 	if err := yuma.DetermineMinimalExecutionOrder(); err != nil {
