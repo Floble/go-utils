@@ -1,12 +1,14 @@
 package molecule
 
 import (
+	"bufio"
+	"go-utils/algorithms/artificialintelligence/agents/yuma"
+	"go-utils/helper"
 	"math"
 	"os"
 	"os/exec"
-	"bufio"
+	"strconv"
 	"time"
-	"go-utils/algorithms/artificialintelligence/agents/yuma"
 )
 
 type Molecule struct {
@@ -15,16 +17,14 @@ type Molecule struct {
 	instance yuma.Instance
 	omega int
 	sigma int
-	path string
 }
 
-func NewMolecule(yuma *yuma.Yuma, executor yuma.Executor, omega int, sigma int, path string) *Molecule {
+func NewMolecule(yuma *yuma.Yuma, executor yuma.Executor, omega int, sigma int) *Molecule {
 	molecule := new(Molecule)
 	molecule.yuma = yuma
 	molecule.executor = executor
 	molecule.omega = omega
 	molecule.sigma = sigma
-	molecule.path = path
 
 	return molecule
 }
@@ -53,13 +53,29 @@ func (molecule *Molecule) GetSigma() int {
 	return molecule.sigma
 }
 
-func (molecule *Molecule) GetPath() string {
-	return molecule.path
+func (molecule *Molecule) Initialize() error {
+	for i := 0; i < len(molecule.GetYuma().GetSubprocesses()); i++ {
+		if err := helper.CopyDirectory("molecule_example", "molecule_" + strconv.Itoa(int(math.Exp2(float64(i))))); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func (molecule *Molecule) CreateInstance(waitingTime int) error {
+func (molecule *Molecule) CleanUp() error {
+	for i := 0; i < len(molecule.GetYuma().GetSubprocesses()); i++ {
+		if err := os.RemoveAll("molecule_" + strconv.Itoa(int(math.Exp2(float64(i))))); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (molecule *Molecule) CreateInstance(target int, waitingTime int) error {
 	cmd := exec.Command("molecule", "create")
-	cmd.Dir = molecule.path
+	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -75,9 +91,9 @@ func (molecule *Molecule) CreateInstance(waitingTime int) error {
 	return nil
 }
 
-func (molecule *Molecule) DeleteInstance() error {
+func (molecule *Molecule) DeleteInstance(target int) error {
 	cmd := exec.Command("molecule", "destroy")
-	cmd.Dir = molecule.path
+	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	err := cmd.Start()
 	if err != nil {
 		return err
@@ -93,37 +109,50 @@ func (molecule *Molecule) DeleteInstance() error {
 	return nil
 }
 
-func (molecule *Molecule) TakeAction(state int, action int, path []string, success bool) (error, bool, float64, int) {
+func (molecule *Molecule) TakeAction(target int, state int, action int, path []string, success bool) (error, bool, float64, int) {
 	reward := math.MaxFloat64 * -1.0
 	successor := -1
 
 	for i := 0; i < molecule.GetSigma(); i++ {
-		if molecule.GetInstance() == nil {
-			if err := molecule.CreateInstance(0); err != nil {
+		/* if molecule.GetInstance() == nil {
+			if err := molecule.CreateInstance(target, 0); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
-		}
+		} */
 
-		if !success && len(path) > 0 && !molecule.converge("../../../", path, "install") {
-			if err := molecule.DeleteInstance(); err != nil {
+		/* if !success && len(path) > 0 && !molecule.test(target, "../../../", path, "install") {
+			if err := molecule.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
 			continue
-		}
+		} */
 
-		roles := make([]string, 0)
-		roles = append(roles, molecule.GetYuma().GetConfigurations()[action])
+		/* roles := make([]string, 0)
+		roles = append(roles, molecule.GetYuma().GetConfigurations()[action]) */
 
-		if molecule.converge("../../../", roles, "install") {
+		path = append(path, molecule.GetYuma().GetConfigurations()[action])
+
+		/* if molecule.test(target, "../../../", roles, "install") {
 			reward = -1.0
 			success = true
 			successor = state | action
 
 			break
 		} else {
-			if err := molecule.DeleteInstance(); err != nil {
+			if err := molecule.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
+			reward = -10.0
+			success = false
+			successor = state
+		} */
+
+		if molecule.test(target, "../../../", path, "install") {
+			reward = -1.0
+			success = true
+			successor = state | action
+			break
+		} else {
 			reward = -10.0
 			success = false
 			successor = state
@@ -133,22 +162,22 @@ func (molecule *Molecule) TakeAction(state int, action int, path []string, succe
 	return nil, success, reward, successor
 }
 
-func (molecule *Molecule) converge(pathPrefix string, roles []string, lifecycle string) bool {
-	file, err := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (molecule *Molecule) test(target int, pathPrefix string, roles []string, lifecycle string) bool {
+	file, err := os.OpenFile("logs_" + strconv.Itoa(target) + ".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return false
 	}
 	defer file.Close()
 
-	if err := molecule.executor.CreateExecutionOrder(pathPrefix, roles, lifecycle); err != nil {
+	if err := molecule.executor.CreateExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml", pathPrefix, roles, lifecycle); err != nil {
 		return false
 	}
 	
-	cmd := exec.Command("molecule", "converge")
-	cmd.Dir = molecule.path
+	cmd := exec.Command("molecule", "test", "--parallel")
+	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		molecule.executor.DeleteExecutionOrder()
+		molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 		return false
 	}
   
@@ -161,15 +190,15 @@ func (molecule *Molecule) converge(pathPrefix string, roles []string, lifecycle 
 	file.WriteString("\n\n")
 
 	if err := cmd.Start(); err != nil {
-		molecule.executor.DeleteExecutionOrder()
+		molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 		return false
 	}
 	if err := cmd.Wait(); err != nil {
-		molecule.executor.DeleteExecutionOrder()
+		molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 		return false
 	}
 
-	molecule.executor.DeleteExecutionOrder()
+	molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 
 	return true
 }

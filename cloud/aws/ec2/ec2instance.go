@@ -152,6 +152,7 @@ func (instance *EC2Instance) AddToKnownHosts() error {
 	err = cmd.Wait()
 	if err != nil {
 		fmt.Println("ADD TO KNOWN HOSTS ERROR: COMMAND WAIT")
+		fmt.Println(err.Error())
 		return err
 	}
 

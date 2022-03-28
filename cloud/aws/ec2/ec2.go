@@ -2,15 +2,17 @@ package ec2
 
 import (
 	"fmt"
-	"time"
-	"math"
 	"go-utils/algorithms/artificialintelligence/agents/yuma"
+	"math"
+	"sync"
+	"time"
 )
 
 type EC2 struct {
 	yuma *yuma.Yuma
 	executor yuma.Executor
-	instance yuma.Instance
+	//instance yuma.Instance
+	instances sync.Map
 	omega int
 	sigma int
 }
@@ -33,12 +35,20 @@ func (ec2 *EC2) GetExecutor() yuma.Executor {
 	return ec2.executor
 }
 
-func (ec2 *EC2) GetInstance() yuma.Instance {
-	return ec2.instance
+func (ec2 *EC2) GetInstance(target int) yuma.Instance {
+	if instance, ok := ec2.instances.Load(target); ok {
+		if instance == nil {
+			return nil
+		} else {
+			return instance.(yuma.Instance)
+		}
+	} else {
+		return nil
+	}
 }
 
-func (ec2 *EC2) SetInstance(instance yuma.Instance) {
-	ec2.instance = instance
+func (ec2 *EC2) SetInstance(target int, instance yuma.Instance) {
+	ec2.instances.Store(target, instance)
 }
 
 func (ec2 *EC2) GetOmega() int {
@@ -49,8 +59,17 @@ func (ec2 *EC2) GetSigma() int {
 	return ec2.sigma
 }
 
-func (ec2 *EC2) CreateInstance(waitingTime int) error {
+func (ec2 *EC2) Initialize() error {
+	return nil
+}
+
+func (ec2 *EC2) CleanUp() error {
+	return nil
+}
+
+func (ec2 *EC2) CreateInstance(target int, waitingTime int) error {
 	instance := NewEC2Instance()
+
 	created := false
 	for created == false {
 		if err := instance.Create(); err != nil {
@@ -62,7 +81,7 @@ func (ec2 *EC2) CreateInstance(waitingTime int) error {
 		}
 	}
 
-	if err := ec2.executor.CreateEnvironmentDescription(instance.GetPublicIP()); err != nil {
+	if err := ec2.executor.CreateEnvironmentDescription(target, instance.GetPublicIP()); err != nil {
 		fmt.Println("EC2 ERROR: CREATE ENVIRONMENT FROM DESCRIPTION")
 		return err
 	}
@@ -81,15 +100,15 @@ func (ec2 *EC2) CreateInstance(waitingTime int) error {
 		}
 	}
 
-	ec2.SetInstance(instance)
+	ec2.SetInstance(target, instance)
 
 	return nil
 }
 
-func (ec2 *EC2) DeleteInstance() error {
+func (ec2 *EC2) DeleteInstance(target int) error {
 	deleted := false
 	for deleted == false {
-		if err := ec2.GetInstance().Delete(); err != nil {
+		if err := ec2.GetInstance(target).Delete(); err != nil {
 			fmt.Println("EC2 ERROR: DELETE INSTANCE")
 			//return err
 			fmt.Println(err)
@@ -98,44 +117,45 @@ func (ec2 *EC2) DeleteInstance() error {
 		}
 	}
 
-	if err := ec2.executor.RemoveEnvironmentDescription(); err != nil {
+	if err := ec2.executor.RemoveEnvironmentDescription(target); err != nil {
 		fmt.Println("EC2 ERROR: REMOVE ENVIRONMENT DESCRIPTION")
 		return err
 	}
 
-	ec2.SetInstance(nil)
+	ec2.SetInstance(target, nil)
 
 	return nil
 }
 
-func (ec2 *EC2) TakeAction(state int, action int, path []string, success bool) (error, bool, float64, int) {
+func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, success bool) (error, bool, float64, int) {
 	reward := math.MaxFloat64 * -1.0
 	successor := -1
 
 	for i := 0; i < ec2.GetSigma(); i++ {
-		if ec2.GetInstance() == nil {
-			if err := ec2.CreateInstance(ec2.GetOmega()); err != nil {
+		if ec2.GetInstance(target) == nil {
+			if err := ec2.CreateInstance(target, ec2.GetOmega()); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
 		}
 
-		if !success && len(path) > 0 && !ec2.executor.Execute("", path, "install") {
-			if err := ec2.DeleteInstance(); err != nil {
+		if !success && len(path) > 0 && !ec2.executor.Execute(target, "", path, "install") {
+			if err := ec2.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
+			continue
 		}
 
 		roles := make([]string, 0)
 		roles = append(roles, ec2.GetYuma().GetConfigurations()[action])
 
-		if ec2.executor.Execute("", roles, "install") {
+		if ec2.executor.Execute(target, "", roles, "install") {
 			reward = -1.0
 			success = true
 			successor = state | action
 
 			break
 		} else {
-			if err := ec2.DeleteInstance(); err != nil {
+			if err := ec2.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
 			reward = -10.0

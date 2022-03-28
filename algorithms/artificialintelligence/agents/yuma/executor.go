@@ -2,10 +2,9 @@ package yuma
 
 type Executor interface {
 	GetRepository() string
-	SetPlaybook(string)
-	CreateExecutionOrder(string, []string, string) error
-	DeleteExecutionOrder() error
-	CreateEnvironmentDescription(description interface{}) error
-	RemoveEnvironmentDescription() error
-	Execute(string, []string, string) bool
+	CreateExecutionOrder(string, string, []string, string) error
+	DeleteExecutionOrder(string) error
+	CreateEnvironmentDescription(int, interface{}) error
+	RemoveEnvironmentDescription(int) error
+	Execute(int, string, []string, string) bool
 }

@@ -57,7 +57,7 @@ func (dql *DoubleQLearning) GetGamma() float64 {
 func (dql *DoubleQLearning) Learn(target int) error {
 	q1 := mat.NewDense(int(math.Exp2(float64(len(dql.GetYuma().GetSubprocesses())))), int(math.Exp2(float64(len(dql.GetYuma().GetSubprocesses()) - 1)) + 1), nil)
 	q2 := mat.NewDense(int(math.Exp2(float64(len(dql.GetYuma().GetSubprocesses())))), int(math.Exp2(float64(len(dql.GetYuma().GetSubprocesses()) - 1)) + 1), nil)
-	model := dql.GetYuma().GetModel()
+	model := dql.GetYuma().GetModel(target)
 	policy := dql.GetPolicy()
 	
 	var err error
@@ -88,8 +88,8 @@ func (dql *DoubleQLearning) Learn(target int) error {
 		exportResults = ""
 
 		// Initialize S
-		if dql.GetYuma().GetEnvironment().GetInstance() != nil {
-			dql.GetYuma().GetEnvironment().DeleteInstance()
+		if dql.GetYuma().GetEnvironment().GetInstance(target) != nil {
+			dql.GetYuma().GetEnvironment().DeleteInstance(target)
 		}
 		state, path := dql.initializeState()
 		// Repeat (for each step of episode until S is target state)
@@ -133,7 +133,7 @@ func (dql *DoubleQLearning) Learn(target int) error {
 
 			// Take action A, observe R, S'
 			if dql.GetMemory().At(state, action) == 0.0 {
-				err, success, reward, successor = dql.GetYuma().GetEnvironment().TakeAction(state, action, path, success)
+				err, success, reward, successor = dql.GetYuma().GetEnvironment().TakeAction(target, state, action, path, success)
 				dql.GetMemory().Set(state, action, reward)
 				if err != nil {
 					return err
@@ -210,7 +210,7 @@ func (dql *DoubleQLearning) Learn(target int) error {
 func (dql *DoubleQLearning) Solve(target int) []string {
 	state := dql.GetYuma().GetStartState()
 	solution := make([]string, 0)
-	model := dql.GetYuma().GetModel()
+	model := dql.GetYuma().GetModel(target)
 
 	for state & target == 0 {
 		action := dql.ArgMaxAction(model, state)

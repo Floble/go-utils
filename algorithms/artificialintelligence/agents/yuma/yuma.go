@@ -1,9 +1,11 @@
 package yuma
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math"
 	"sync"
+	"strconv"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -11,7 +13,8 @@ type Yuma struct {
 	subprocesses map[string]int
 	configurations map[int]string
 	environment Environment
-	model *mat.Dense
+	//models map[int]*mat.Dense
+	models sync.Map
 	rationalThinking RationalThinking
 }
 
@@ -35,12 +38,16 @@ func (yuma *Yuma) GetEnvironment() Environment {
 	return yuma.environment
 }
 
-func (yuma *Yuma) GetModel() *mat.Dense {
-	return yuma.model
+func (yuma *Yuma) GetModel(target int) *mat.Dense {
+	if model, ok := yuma.models.Load(target); ok {
+		return model.(*mat.Dense)
+	} else {
+		return nil
+	}
 }
 
-func (yuma *Yuma) SetModel(model *mat.Dense) {
-	yuma.model = model
+func (yuma *Yuma) SetModel(target int, model *mat.Dense) {
+	yuma.models.Store(target, model)
 }
 
 func (yuma *Yuma) GetRationalThinking() RationalThinking {
@@ -73,7 +80,10 @@ func (yuma *Yuma) SetEnvironment(environment Environment) error {
 	if err := yuma.identifySubprocesses(yuma.environment.GetExecutor().GetRepository()); err != nil {
 		return err
 	}
-	yuma.model = mat.NewDense(int(math.Exp2(float64(len(yuma.subprocesses)))), int(math.Exp2(float64(len(yuma.subprocesses) - 1)) + 1), nil)
+	
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		yuma.models.Store(int(math.Exp2(float64(i))), mat.NewDense(int(math.Exp2(float64(len(yuma.subprocesses)))), int(math.Exp2(float64(len(yuma.subprocesses) - 1)) + 1), nil))
+	}
 
 	return nil
 }
@@ -106,33 +116,47 @@ func (yuma *Yuma) Actions(state int) []int {
 
 func (yuma *Yuma) LearnDependencies() <-chan error {
 	var wg sync.WaitGroup
-
-	//target := int(math.Exp2(float64(len(yuma.GetSubprocesses())))) - 1
-	
+	wg.Add(len(yuma.GetSubprocesses()))
 	errs := make(chan error, 1)
-	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
-		wg.Add(1)
-		i := i
-		go func() {
-			defer wg.Done()
-            if err := yuma.GetRationalThinking().Learn(i); err != nil {
-				errs <- err
-			}
-        }()
+
+	if err := yuma.GetEnvironment().Initialize(); err != nil {
+		fmt.Println("DIRECTORY COPY ERROR: " + err.Error())
+		errs <- err
 	}
 
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		target := math.Exp2(float64(i))
+		go func() {
+			defer wg.Done()
+			behaviorPolicy := NewEpsilonGreedyPolicy(0.1)
+			targetPolicy := NewGreedyPolicy()
+			rationalThinking := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
+			rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
+			yuma.SetRationalThinking(rationalThinking)
+			behaviorPolicy.SetRationalThinking(rationalThinking)
+			targetPolicy.SetRationalThinking(rationalThinking)
+            yuma.GetRationalThinking().Learn(int(target))
+        }()
+	}
 	wg.Wait()
+
+	if err := yuma.GetEnvironment().CleanUp(); err != nil {
+		fmt.Println("DIRECTORY DELETE ERROR: " + err.Error())
+		errs <- err
+	}
 
 	return errs
 }
 
 func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
-	target := 2
-
-	mEO := yuma.GetRationalThinking().Solve(target)
-	yuma.GetEnvironment().GetExecutor().SetPlaybook("playbook.yml")
-	if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder("", mEO, "install"); err != nil {
-		return err
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		target := math.Exp2(float64(i))
+		pathExecutionOrder := "playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"
+		
+		mEO := yuma.GetRationalThinking().Solve(int(target))
+		if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(pathExecutionOrder, "", mEO, "install"); err != nil {
+			return err
+		}
 	}
 
 	return nil

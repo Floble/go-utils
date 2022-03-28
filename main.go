@@ -416,26 +416,25 @@ func main() {
 	} */
 
 	yuma := yp.NewYuma()
-	//ansible := iac.NewAnsible("", "molecule_example/molecule/default/converge.yml", "roles/")
-	ansible := iac.NewAnsible("hosts", "yuma.yml", "roles/")
-	//molecule := molecule.NewMolecule(yuma, ansible, 30, 3, "molecule_example")
+	ansible := iac.NewAnsible("roles/")
+	//molecule := molecule.NewMolecule(yuma, ansible, 30, 3)
 	ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
 	//policy := yp.NewEpsilonGreedyPolicy(0.1)
-	behaviorPolicy := yp.NewEpsilonGreedyPolicy(0.1)
+	//behaviorPolicy := yp.NewEpsilonGreedyPolicy(0.1)
 	//behaviorPolicy := yp.NewRandomPolicy()
-	targetPolicy := yp.NewGreedyPolicy()
+	//targetPolicy := yp.NewGreedyPolicy()
 	//rationalThinking := yp.NewDoubleQLearning(yuma, policy, 2000, 0.5, 1)
 	//rationalThinking := yp.NewQLearning(yuma, policy, 1000, 0.5, 1)
-	rationalThinking := yp.NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
+	//rationalThinking := yp.NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
 	//rationalThinking := yp.NewSearch(yuma)
 
-	behaviorPolicy.SetRationalThinking(rationalThinking)
-	targetPolicy.SetRationalThinking(rationalThinking)
+	/* behaviorPolicy.SetRationalThinking(rationalThinking)
+	targetPolicy.SetRationalThinking(rationalThinking) */
 	if err := yuma.SetEnvironment(ec2); err != nil {
 		fmt.Println(err)
 	}
-	rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
-	yuma.SetRationalThinking(rationalThinking)
+	/* rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
+	yuma.SetRationalThinking(rationalThinking) */
 
 	errs := yuma.LearnDependencies()
 	for i := 0; i < len(errs); i++ {

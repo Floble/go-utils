@@ -25,7 +25,7 @@ func (search *Search) GetYuma() *Yuma {
 }
 
 func (search *Search) Learn(terminal int) error {
-	search.GetYuma().SetModel(mat.NewDense(int(math.Exp2(float64(len(search.GetYuma().GetSubprocesses())))), int(math.Exp2(float64(len(search.GetYuma().GetSubprocesses()) - 1)) + 1), nil))
+	search.GetYuma().SetModel(0, mat.NewDense(int(math.Exp2(float64(len(search.GetYuma().GetSubprocesses())))), int(math.Exp2(float64(len(search.GetYuma().GetSubprocesses()) - 1)) + 1), nil))
 	if err := search.BuildSearchTree(search.GetYuma().GetStartState(), 0, make([]string, 0)); err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func (search *Search) Solve(target int) []string {
 		}
 
 		for _, action := range search.GetYuma().Actions(state.State) {
-			successor := int(search.GetYuma().GetModel().At(state.State, action))
+			successor := int(search.GetYuma().GetModel(0).At(state.State, action))
 			if _, ok := exploredElements[successor]; ok {
 				continue
 			}
@@ -104,21 +104,21 @@ func (search *Search) BuildSearchTree(state int, depth int, path []string) error
 		}
 		exportResults = ""
 
-		if search.GetYuma().GetEnvironment().GetInstance() != nil {
-			search.GetYuma().GetEnvironment().DeleteInstance()
+		if search.GetYuma().GetEnvironment().GetInstance(0) != nil {
+			search.GetYuma().GetEnvironment().DeleteInstance(0)
 		}
-		err, success, _, _ := search.GetYuma().GetEnvironment().TakeAction(state, action, path, false)
+		err, success, _, _ := search.GetYuma().GetEnvironment().TakeAction(0, state, action, path, false)
 		if err != nil {
 			return err
 		}
 
 		if success {
-			search.GetYuma().GetModel().Set(state, action, float64(state | action))
+			search.GetYuma().GetModel(0).Set(state, action, float64(state | action))
 		} else {
-			search.GetYuma().GetModel().Set(state, action, float64(state))
+			search.GetYuma().GetModel(0).Set(state, action, float64(state))
 		}
 
-		successor := int(search.GetYuma().GetModel().At(state, action))
+		successor := int(search.GetYuma().GetModel(0).At(state, action))
 		exportResults = fmt.Sprintf("Successor: %d\n\n", successor)
 		if err := search.log(exportResults, "results.txt"); err != nil {
 			return err

@@ -55,7 +55,7 @@ func (ql *QLearning) GetGamma() float64 {
 }
 
 func (ql *QLearning) Learn(target int) error {
-	model := ql.GetYuma().GetModel()
+	model := ql.GetYuma().GetModel(target)
 	policy := ql.GetPolicy()
 
 	var err error
@@ -83,8 +83,8 @@ func (ql *QLearning) Learn(target int) error {
 		exportResults = ""
 
 		// Initialize S
-		if ql.GetYuma().GetEnvironment().GetInstance() != nil {
-			ql.GetYuma().GetEnvironment().DeleteInstance()
+		if ql.GetYuma().GetEnvironment().GetInstance(target) != nil {
+			ql.GetYuma().GetEnvironment().DeleteInstance(target)
 		}
 		state, path := ql.initializeState()
 		// Repeat (for each step of episode until S is target state)
@@ -114,7 +114,7 @@ func (ql *QLearning) Learn(target int) error {
 
 			// Take action A, observe R, S'
 			if ql.GetMemory().At(state, action) == 0.0 {
-				err, success, reward, successor = ql.GetYuma().GetEnvironment().TakeAction(state, action, path, success)
+				err, success, reward, successor = ql.GetYuma().GetEnvironment().TakeAction(target, state, action, path, success)
 				ql.GetMemory().Set(state, action, reward)
 				if err != nil {
 					return err
@@ -168,7 +168,7 @@ func (ql *QLearning) Learn(target int) error {
 func (ql *QLearning) Solve(target int) []string {
 	state := ql.GetYuma().GetStartState()
 	solution := make([]string, 0)
-	model := ql.GetYuma().GetModel()
+	model := ql.GetYuma().GetModel(target)
 
 	for state & target == 0 {
 		action := ql.ArgMaxAction(model, state)

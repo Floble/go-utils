@@ -2,20 +2,19 @@ package infrastructureascode
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
+	"strconv"
 )
 
 type Ansible struct {
-	inventory, playbook, repository string
+	repository string
 }
 
-func NewAnsible(inventory, playbook, repository string) *Ansible {
+func NewAnsible(repository string) *Ansible {
 	ansible := new(Ansible)
-	ansible.inventory = inventory
-	ansible.playbook = playbook
 	ansible.repository = repository
 
 	return ansible
@@ -25,12 +24,8 @@ func (ansible *Ansible) GetRepository() string {
 	return ansible.repository
 }
 
-func (ansible *Ansible) SetPlaybook(playbook string) {
-	ansible.playbook = playbook
-}
-
-func (ansible *Ansible) CreateExecutionOrder(pathPrefix string, roles []string, lifecycle string) error {
-	file, err := os.OpenFile(ansible.GetPlaybook(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (ansible *Ansible) CreateExecutionOrder(path string, pathPrefix string, roles []string, lifecycle string) error {
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -44,16 +39,16 @@ func (ansible *Ansible) CreateExecutionOrder(pathPrefix string, roles []string, 
 	return nil
 }
 
-func (ansible *Ansible) DeleteExecutionOrder() error {
-	if err := os.Remove(ansible.GetPlaybook()); err != nil {
+func (ansible *Ansible) DeleteExecutionOrder(path string) error {
+	if err := os.Remove(path); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ansible *Ansible) CreateEnvironmentDescription(description interface{}) error {
-	file, err := os.OpenFile(ansible.GetInventory(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (ansible *Ansible) CreateEnvironmentDescription(target int, description interface{}) error {
+	file, err := os.OpenFile("hosts_" + strconv.Itoa(target), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -75,71 +70,61 @@ func (ansible *Ansible) CreateEnvironmentDescription(description interface{}) er
 	return nil
 }
 
-func (ansible *Ansible) RemoveEnvironmentDescription() error {
-	if err := os.Remove(ansible.GetInventory()); err != nil {
+func (ansible *Ansible) RemoveEnvironmentDescription(target int) error {
+	if err := os.Remove("hosts_" + strconv.Itoa(target)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (ansible *Ansible) Execute(pathPrefix string, roles []string, lifecycle string) bool {
-	file, _ := os.OpenFile("logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (ansible *Ansible) Execute(target int, pathPrefix string, roles []string, lifecycle string) bool {
+	file, err := os.OpenFile("logs_" + strconv.Itoa(target) + ".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return false
+	}
 	defer file.Close()
 
-	if len(roles) == 0 {
-		return true
-	}
-
-	err := ansible.CreateExecutionOrder(pathPrefix, roles, lifecycle)
-	if err != nil {
-		fmt.Println("ANSIBLE ERROR: CREATE EXECUTION ORDER")
+	if err := ansible.CreateExecutionOrder("yuma_" + strconv.Itoa(target) + ".yml", pathPrefix, roles, lifecycle); err != nil {
 		return false
 	}
-
-	cmd := exec.Command("ansible-playbook", "-i", ansible.GetInventory(), ansible.GetPlaybook())
-  
+	
+	if _, err := os.Stat("hosts_" + strconv.Itoa(target)); errors.Is(err, os.ErrNotExist) {
+		fmt.Println("ANSIBLE ERROR: INVENTORY IS MISSING")
+		return false
+	}
+	cmd := exec.Command("ansible-playbook", "-i", "hosts_" + strconv.Itoa(target), "yuma_" + strconv.Itoa(target) + ".yml", "--limit", "yuma1")
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		fmt.Println("ANSIBLE ERROR: STDOUT PIPE")
-		ansible.DeleteExecutionOrder()
+		ansible.DeleteExecutionOrder("yuma_" + strconv.Itoa(target) + ".yml")
 		return false
 	}
   
-	unreachable := false
 	scanner := bufio.NewScanner(out)
 	go func() {
 		for scanner.Scan() {
 			file.WriteString(scanner.Text())
-			if strings.Contains(scanner.Text(), "unreachable=1") {
-				fmt.Println("ANSIBLE ERROR: HOST IS UNREACHABLE")
-				unreachable = true
-			}
 		}
 	}()
 	file.WriteString("\n\n")
 
-	err = cmd.Start()
-	if err != nil {
-		fmt.Println("ANSIBLE ERROR: EXECUTE START")
-		ansible.DeleteExecutionOrder()
+	if err := cmd.Start(); err != nil {
+		ansible.DeleteExecutionOrder("yuma_" + strconv.Itoa(target) + ".yml")
 		return false
 	}
-  
-	err = cmd.Wait()
-	if (err != nil) || unreachable {
-		ansible.DeleteExecutionOrder()
+	if err := cmd.Wait(); err != nil {
+		ansible.DeleteExecutionOrder("yuma_" + strconv.Itoa(target) + ".yml")
 		return false
 	}
 
-	ansible.DeleteExecutionOrder()
+	ansible.DeleteExecutionOrder("yuma_" + strconv.Itoa(target) + ".yml")
 
 	return true
 }
 
 func (ansible *Ansible) stringBuilder(pathPrefix string, roles []string, lifecycle string) string {
 	export := "---\n"
-	export += "- hosts: all\n"
+	export += "- hosts: yuma1\n"
 	export += "  vars:\n"
 	export += "  - lifecycle: \"" + lifecycle + "\"\n"
 	export += "  roles:\n"
@@ -155,12 +140,4 @@ func (ansible *Ansible) stringBuilder(pathPrefix string, roles []string, lifecyc
 	}
 
 	return export
-}
-
-func (ansible *Ansible) GetInventory() string {
-	return ansible.inventory
-}
-
-func (ansible *Ansible) GetPlaybook() string {
-	return ansible.playbook
 }
