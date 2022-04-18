@@ -37,7 +37,7 @@ func (molecule *Molecule) GetExecutor() yuma.Executor {
 	return molecule.executor
 }
 
-func (molecule *Molecule) GetInstance() yuma.Instance {
+func (molecule *Molecule) GetInstance(target int) yuma.Instance {
 	return molecule.instance
 }
 
@@ -120,7 +120,7 @@ func (molecule *Molecule) TakeAction(target int, state int, action int, path []s
 			}
 		} */
 
-		/* if !success && len(path) > 0 && !molecule.test(target, "../../../", path, "install") {
+		/* if !success && len(path) > 0 && !molecule.test(target, "../../../", path, "create") {
 			if err := molecule.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
@@ -132,7 +132,7 @@ func (molecule *Molecule) TakeAction(target int, state int, action int, path []s
 
 		path = append(path, molecule.GetYuma().GetConfigurations()[action])
 
-		/* if molecule.test(target, "../../../", roles, "install") {
+		/* if molecule.test(target, "../../../", roles, "create") {
 			reward = -1.0
 			success = true
 			successor = state | action
@@ -147,13 +147,13 @@ func (molecule *Molecule) TakeAction(target int, state int, action int, path []s
 			successor = state
 		} */
 
-		if molecule.test(target, "../../../", path, "install") {
+		if molecule.test(target, "../../../", path, "create") {
 			reward = -1.0
 			success = true
 			successor = state | action
 			break
 		} else {
-			reward = -10.0
+			reward = (float64(len(molecule.GetYuma().GetSubprocesses())) + 1.0) * -1.0
 			success = false
 			successor = state
 		}
@@ -169,7 +169,7 @@ func (molecule *Molecule) test(target int, pathPrefix string, roles []string, li
 	}
 	defer file.Close()
 
-	if err := molecule.executor.CreateExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml", pathPrefix, roles, lifecycle); err != nil {
+	if err := molecule.executor.CreateExecutionOrder(0, "molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml", pathPrefix, roles, lifecycle, "all"); err != nil {
 		return false
 	}
 	

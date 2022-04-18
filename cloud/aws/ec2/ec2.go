@@ -138,7 +138,7 @@ func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, suc
 			}
 		}
 
-		if !success && len(path) > 0 && !ec2.executor.Execute(target, "", path, "install") {
+		if !success && len(path) > 0 && !ec2.executor.Execute(target, "", path, "create", "yuma1") {
 			if err := ec2.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
@@ -148,7 +148,7 @@ func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, suc
 		roles := make([]string, 0)
 		roles = append(roles, ec2.GetYuma().GetConfigurations()[action])
 
-		if ec2.executor.Execute(target, "", roles, "install") {
+		if ec2.executor.Execute(target, "", roles, "create", "yuma1") {
 			reward = -1.0
 			success = true
 			successor = state | action
@@ -158,7 +158,7 @@ func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, suc
 			if err := ec2.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
-			reward = -10.0
+			reward = (float64(len(ec2.GetYuma().GetSubprocesses())) + 1.0) * -1.0
 			success = false
 			successor = state
 		}

@@ -114,7 +114,7 @@ func (yuma *Yuma) Actions(state int) []int {
 	return actions
 }
 
-func (yuma *Yuma) LearnDependencies() <-chan error {
+func (yuma *Yuma) LearnDependenciesAsynchronously() <-chan error {
 	var wg sync.WaitGroup
 	wg.Add(len(yuma.GetSubprocesses()))
 	errs := make(chan error, 1)
@@ -148,13 +148,39 @@ func (yuma *Yuma) LearnDependencies() <-chan error {
 	return errs
 }
 
+func (yuma *Yuma) LearnDependenciesSequentielly() error {
+	if err := yuma.GetEnvironment().Initialize(); err != nil {
+		fmt.Println("DIRECTORY COPY ERROR: " + err.Error())
+		return err
+	}
+
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		target := math.Exp2(float64(i))
+		behaviorPolicy := NewEpsilonGreedyPolicy(0.1)
+		targetPolicy := NewGreedyPolicy()
+		rationalThinking := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
+		rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
+		yuma.SetRationalThinking(rationalThinking)
+		behaviorPolicy.SetRationalThinking(rationalThinking)
+		targetPolicy.SetRationalThinking(rationalThinking)
+		yuma.GetRationalThinking().Learn(int(target))
+	}
+
+	if err := yuma.GetEnvironment().CleanUp(); err != nil {
+		fmt.Println("DIRECTORY DELETE ERROR: " + err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
 	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
 		target := math.Exp2(float64(i))
 		pathExecutionOrder := "playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"
 		
 		mEO := yuma.GetRationalThinking().Solve(int(target))
-		if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(pathExecutionOrder, "", mEO, "install"); err != nil {
+		if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(0, pathExecutionOrder, "", mEO, "create", "localhost"); err != nil {
 			return err
 		}
 	}

@@ -186,7 +186,7 @@ func (tb *TreeBackup) Learn(target int) error {
 					decisions[t + 1] = NewDecision(successor, 0)
 					rewards[t + 1] = reward
 					tb.GetMemory().Set(decisions[t].GetState(), decisions[t].GetAction(), rewards[t + 1])
-					if rewards[t + 1] == -10.0 {
+					if rewards[t + 1] == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
 						tau = t
 					}
 				} else {
@@ -197,7 +197,7 @@ func (tb *TreeBackup) Learn(target int) error {
 						successor = decisions[t].GetState() | decisions[t].GetAction()
 						decisions[t + 1] = NewDecision(successor, 0)
 						path = append(path, tb.GetYuma().GetConfigurations()[decisions[t].GetAction()])
-					} else if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == -10.0 {
+					} else if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
 						success = false
 						reward = tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction())
 						rewards[t + 1] = reward

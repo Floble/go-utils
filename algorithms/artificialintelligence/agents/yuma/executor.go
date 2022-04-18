@@ -2,9 +2,11 @@ package yuma
 
 type Executor interface {
 	GetRepository() string
-	CreateExecutionOrder(string, string, []string, string) error
+	CreateExecutionOrder(int, string, string, []string, string, string) error
 	DeleteExecutionOrder(string) error
 	CreateEnvironmentDescription(int, interface{}) error
 	RemoveEnvironmentDescription(int) error
-	Execute(int, string, []string, string) bool
+	Execute(int, string, []string, string, string) bool
+	DetermineInputs(string) (error, []string)
+	DetermineOutputs(string) (error, []string)
 }

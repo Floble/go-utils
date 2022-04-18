@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+	"bytes"
+	"strings"
 	"gonum.org/v1/gonum/floats"
 	"gonum.org/v1/gonum/mat"
 )
@@ -195,6 +197,42 @@ func Accuracy(prediction, result *mat.Dense) float64 {
 	}
 
 	return float64(acc) / float64(nums)
+}
+
+func ReplaceStringInFile(path string, original string, replacement string) error {
+	input, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+    output := bytes.Replace(input, []byte(original), []byte(replacement), -1)
+    if err = ioutil.WriteFile(path, output, 0666); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ReplaceLineInFile(path string, original string, replacement string) error {
+	input, err := ioutil.ReadFile(path)
+    if err != nil {
+		return err
+    }
+
+    lines := strings.Split(string(input), "\n")
+    for i, line := range lines {
+		if strings.Contains(line, original) {
+			module := strings.Split(line, "/")[1]
+			lines[i] = original + replacement + "/" + module + "/"
+        }
+    }
+
+    output := strings.Join(lines, "\n")
+    if err := ioutil.WriteFile(path, []byte(output), 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // The following functions are copied from https://stackoverflow.com/questions/51779243/copy-a-folder-in-go. Kudos to the user Oleg Neumyvakin

@@ -12,7 +12,7 @@ import (
 	//orderstatistics "go-utils/algorithms/orderstatistics"
 	//machine_learning "go-utils/algorithms/machinelearning"
 	//helper "go-utils/helper"
-	ec2 "go-utils/cloud/aws/ec2"
+	//ec2 "go-utils/cloud/aws/ec2"
 	//"math"
 	//"gonum.org/v1/gonum/mat"
 	yp "go-utils/algorithms/artificialintelligence/agents/yuma"
@@ -418,7 +418,8 @@ func main() {
 	yuma := yp.NewYuma()
 	ansible := iac.NewAnsible("roles/")
 	//molecule := molecule.NewMolecule(yuma, ansible, 30, 3)
-	ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
+	//ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
+	terraform := iac.NewTerraform(yuma, ansible, "modules", 0, 1)
 	//policy := yp.NewEpsilonGreedyPolicy(0.1)
 	//behaviorPolicy := yp.NewEpsilonGreedyPolicy(0.1)
 	//behaviorPolicy := yp.NewRandomPolicy()
@@ -430,15 +431,18 @@ func main() {
 
 	/* behaviorPolicy.SetRationalThinking(rationalThinking)
 	targetPolicy.SetRationalThinking(rationalThinking) */
-	if err := yuma.SetEnvironment(ec2); err != nil {
+	if err := yuma.SetEnvironment(terraform); err != nil {
 		fmt.Println(err)
 	}
 	/* rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
 	yuma.SetRationalThinking(rationalThinking) */
 
-	errs := yuma.LearnDependencies()
+	/* errs := yuma.LearnDependenciesAsynchronously()
 	for i := 0; i < len(errs); i++ {
 		err := <- errs
+		fmt.Println(err)
+	} */
+	if err := yuma.LearnDependenciesSequentielly(); err != nil {
 		fmt.Println(err)
 	}
 	if err := yuma.DetermineMinimalExecutionOrder(); err != nil {
