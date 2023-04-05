@@ -109,7 +109,7 @@ func (dql *DoubleQLearning) Learn(target int) error {
 
 			// Choose A from S using the policy epsilon-greedy in Q1 + Q2
 			model.Add(q1, q2)
-			policy.DerivePolicy(model)
+			policy.DerivePolicy(model, nil)
 			c, _ := randutil.WeightedChoice(policy.GetSuggestions()[state])
 			action := c.Item.(int)
 

@@ -39,6 +39,15 @@ func (egp *EpsilonGreedyPolicy) GetWeight(state int, action int) int {
 	return 0
 }
 
+func (egp *EpsilonGreedyPolicy) SetWeight(state int, action int, weight int) {
+	choices := egp.GetSuggestions()[state]
+	for _, c := range choices {
+		if c.Item == action {
+			c.Weight = weight
+		}
+	}
+}
+
 func (egp *EpsilonGreedyPolicy) GetEpsilon() float64 {
 	return egp.epsilon
 }
@@ -47,9 +56,9 @@ func (egp *EpsilonGreedyPolicy) SetRationalThinking(rationalThinking RationalThi
 	egp.rationalThinking = rationalThinking
 }
 
-func (egp *EpsilonGreedyPolicy) DerivePolicy(q *mat.Dense) {
+func (egp *EpsilonGreedyPolicy) DerivePolicy(q *mat.Dense, updates *mat.Dense) {
 	for i := 0; i < int(math.Exp2(float64(len(egp.GetRationalThinking().GetYuma().GetSubprocesses())))); i++ {
-		maxAction := egp.GetRationalThinking().ArgMaxAction(q, i)
+		maxAction := egp.GetRationalThinking().ArgMaxAction(q, i, egp.GetRationalThinking().GetYuma().Actions(i))
 		choices := make([]randutil.Choice, 0)
 		for _, action := range egp.GetRationalThinking().GetYuma().Actions(i) {
 			c := randutil.Choice{}

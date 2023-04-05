@@ -37,13 +37,22 @@ func (gp *GreedyPolicy) GetWeight(state int, action int) int {
 	return 0
 }
 
+func (gp *GreedyPolicy) SetWeight(state int, action int, weight int) {
+	choices := gp.GetSuggestions()[state]
+	for _, c := range choices {
+		if c.Item == action {
+			c.Weight = weight
+		}
+	}
+}
+
 func (gp *GreedyPolicy) SetRationalThinking(rationalThinking RationalThinking) {
 	gp.rationalThinking = rationalThinking
 }
 
-func (gp *GreedyPolicy) DerivePolicy(q *mat.Dense) {
+func (gp *GreedyPolicy) DerivePolicy(q *mat.Dense, updates *mat.Dense) {
 	for i := 0; i < int(math.Exp2(float64(len(gp.GetRationalThinking().GetYuma().GetSubprocesses())))); i++ {
-		maxAction := gp.GetRationalThinking().ArgMaxAction(q, i)
+		maxAction := gp.GetRationalThinking().ArgMaxAction(q, i, gp.GetRationalThinking().GetYuma().Actions(i))
 		choices := make([]randutil.Choice, 0)
 		for _, action := range gp.GetRationalThinking().GetYuma().Actions(i) {
 			c := randutil.Choice{}

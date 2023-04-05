@@ -15,7 +15,8 @@ type TreeBackup struct {
 	yuma *Yuma
 	behaviorPolicy Policy
 	targetPolicy Policy
-	memory *mat.Dense
+	root int
+	path []string
 	episodes int
 	alpha float64
 	gamma float64
@@ -52,16 +53,28 @@ func (tb *TreeBackup) GetYuma() *Yuma {
 	return tb.yuma
 }
 
-func (tb *TreeBackup) GetMemory() *mat.Dense {
-	return tb.memory
-}
-
 func (tb *TreeBackup) GetBehaviorPolicy() Policy {
 	return tb.behaviorPolicy
 }
 
 func (tb *TreeBackup) GetTargetPolicy() Policy {
 	return tb.targetPolicy
+}
+
+func (tb *TreeBackup) GetRoot() int {
+	return tb.root
+}
+
+func (tb *TreeBackup) SetRoot(root int) {
+	tb.root = root
+}
+
+func (tb *TreeBackup) GetPath() []string {
+	return tb.path
+}
+
+func (tb *TreeBackup) SetPath(path []string) {
+	tb.path = path
 }
 
 func (tb *TreeBackup) GetEpisodes() int {
@@ -100,12 +113,8 @@ func (decision *Decision) SetAction(action int) {
 	decision.action = action
 }
 
-func (tb *TreeBackup) Learn(target int) error {
+func (tb *TreeBackup) Learn(target int, model, updates, history, memory *mat.Dense) error {
 	rand.Seed(time.Now().Unix())
-
-	model := tb.GetYuma().GetModel(target)
-	behaviorPolicy := tb.GetBehaviorPolicy()
-	targetPolicy := tb.GetTargetPolicy()
 
 	var err error
 	var success bool
@@ -118,12 +127,13 @@ func (tb *TreeBackup) Learn(target int) error {
 	}
 	exportResults = ""
 
-	// Initialize Q(s, a) arbitrarily, for all s, a
-	tb.initializeQ(model, target)
-	tb.initializeMemory()
+	behaviorPolicy := tb.GetBehaviorPolicy()
+	targetPolicy := tb.GetTargetPolicy()
+
 	// Initialize pi to be greedy with respect to Q
-	behaviorPolicy.DerivePolicy(model)
-	targetPolicy.DerivePolicy(model)
+	behaviorPolicy.DerivePolicy(model, updates)
+	//behaviorPolicy.DerivePolicy(history)
+	targetPolicy.DerivePolicy(model, updates)
 	// All store and access operations can take their index mod n + 1
 	decisions := make(map[int]*Decision, 0)
 	rewards := make(map[int]float64, 0)
@@ -146,26 +156,42 @@ func (tb *TreeBackup) Learn(target int) error {
 		}
 		state, path := tb.initializeState()
 		// Choose an action A0 arbitrarily as a function of S0; Store A0
-		c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[state])
-		action := c.Item.(int)
-		decisions[0] = NewDecision(state, action)
+		if history.At(state, target) == 0 {
+			decisions[0] = NewDecision(state, target)
+		} else {
+			c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[state])
+			action := c.Item.(int)
+			decisions[0] = NewDecision(state, action)
+		}
 
 		// T = infinity
 		terminal := math.MaxInt64
-		var tau int
+		rewind := false
 
 		// Loop for t = 0, 1, 2, ...
 		t := 0
+		tau := t + 1 - tb.GetN()
 
 		// Loop until tau = T - 1
 		for tau < terminal - 1 {
-			// Tau is the time whose estimate is being updated
-			tau = t + 1 - tb.GetN()
 			if t < terminal {
-				f := mat.Formatted(model, mat.Prefix("        "), mat.Squeeze())
+				if history.At(decisions[t].GetState(), target) == 0 {
+					decisions[t].SetAction(target)
+				}
+
+				if history.At(decisions[t].GetState(), target) >= 1 && memory.At(decisions[t].GetState(), target) == -1.0 {
+					decisions[t].SetAction(target)
+				}
+
+				f := mat.Formatted(history, mat.Prefix("          "), mat.Squeeze())
+				exportResults += fmt.Sprintf("\nHistory = %v\n\n\n", f)
+				f = mat.Formatted(updates, mat.Prefix("          "), mat.Squeeze())
+				exportResults += fmt.Sprintf("\nUpdates = %v\n\n\n", f)
+				f = mat.Formatted(model, mat.Prefix("        "), mat.Squeeze())
 				exportResults += fmt.Sprintf("\nModel = %v\n\n\n", f)
 				exportResults += fmt.Sprintf("T: %d\n", t)
 				exportResults += fmt.Sprintf("S_%d: %d\n", t, decisions[t].GetState())
+				exportResults += fmt.Sprintf("Action Weights: %v\n", behaviorPolicy.GetSuggestions()[decisions[t].GetState()])
 				exportResults += fmt.Sprintf("A_%d: %d\n", t, decisions[t].GetAction())
 				exportResults += fmt.Sprintf("Path: ")
 				exportResults += fmt.Sprintln(path)
@@ -176,7 +202,7 @@ func (tb *TreeBackup) Learn(target int) error {
 				exportResults = ""
 				
 				// Take action At; observe and store the next reward and state as Rt+1, St+1
-				if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == 0.0 {
+				if history.At(decisions[t].GetState(), decisions[t].GetAction()) == 0.0 {
 					err, success, reward, successor = tb.GetYuma().GetEnvironment().TakeAction(target, decisions[t].GetState(), decisions[t].GetAction(), path, success)
 					if err != nil {
 						return err
@@ -185,46 +211,78 @@ func (tb *TreeBackup) Learn(target int) error {
 					}
 					decisions[t + 1] = NewDecision(successor, 0)
 					rewards[t + 1] = reward
-					tb.GetMemory().Set(decisions[t].GetState(), decisions[t].GetAction(), rewards[t + 1])
+					memory.Set(decisions[t].GetState(), decisions[t].GetAction(), rewards[t + 1])
 					if rewards[t + 1] == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
 						tau = t
 					}
 				} else {
-					if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == -1.0 {
+					if memory.At(decisions[t].GetState(), decisions[t].GetAction()) == -1.0 {
+						//time.Sleep(1 * time.Minute)
+						//time.Sleep(10 * time.Second)
 						success = false
-						reward = tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction())
+						reward = memory.At(decisions[t].GetState(), decisions[t].GetAction())
 						rewards[t + 1] = reward
 						successor = decisions[t].GetState() | decisions[t].GetAction()
 						decisions[t + 1] = NewDecision(successor, 0)
 						path = append(path, tb.GetYuma().GetConfigurations()[decisions[t].GetAction()])
-					} else if tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction()) == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
+					} else if memory.At(decisions[t].GetState(), decisions[t].GetAction()) == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
+						//time.Sleep(1 * time.Minute)
+						//time.Sleep(10 * time.Second)
 						success = false
-						reward = tb.GetMemory().At(decisions[t].GetState(), decisions[t].GetAction())
+						reward = memory.At(decisions[t].GetState(), decisions[t].GetAction())
 						rewards[t + 1] = reward
 						successor = decisions[t].GetState()
 						decisions[t + 1] = NewDecision(successor, 0)
 						tau = t
 					}
 				}
+				history.Set(decisions[t].GetState(), decisions[t].GetAction(), history.At(decisions[t].GetState(), decisions[t].GetAction()) + 1)
 
-				exportResults += "R_" + fmt.Sprintf("%d", t + 1) + ": " + fmt.Sprintf("%f", reward) + "\n\n"
+				exportResults += "R_" + fmt.Sprintf("%d", t + 1) + ": " + fmt.Sprintf("%f", reward) + "\n"
+				if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
+					return err
+				}
+				exportResults = ""
+
+				if decisions[t].GetState() == decisions[t + 1].GetState() {
+					rewind = true
+				}
+
+				exportResults += fmt.Sprintf("S_%d: %d\n", t + 1, decisions[t + 1].GetState())
 				if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
 
 				// If St+1 is terminal
-				if (decisions[t + 1].GetState() & target > 0) || (decisions[t].GetState() == decisions[t + 1].GetState()) {
+				if (decisions[t + 1].GetState() & target > 0) || (tb.GetYuma().IsTerminal(decisions[t + 1].GetState())) {
 					terminal = t + 1
 				} else {
 					// Choose an action At+1 arbitrarily as a function of St+1; Store At+1
-					c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
-					action := c.Item.(int)
-					decisions[t + 1].SetAction(action)
+					if history.At(decisions[t + 1].GetState(), target) == 0 {
+						decisions[t + 1].SetAction(target)
+					} else {
+						c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
+						action := c.Item.(int)
+						decisions[t + 1].SetAction(action)
+					}
+
+					if reward == -1.0 {
+						exportResults += fmt.Sprintf("Action Weights: %v\n", behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
+						exportResults += fmt.Sprintf("A_%d: %d\n", t + 1, decisions[t + 1].GetAction())
+						if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
+							return err
+						}
+						exportResults = ""
+					}
 				}
 			}
 			var totalReturn float64
+
+			// Tau is the time whose estimate is being updated
+			tau = t + 1 - tb.GetN()
 			if tau >= 0 {
+				exportResults += fmt.Sprintf("\nN: %d\n", tb.GetN())
 				exportResults += fmt.Sprintf("T: %d\n", t)
 				exportResults += fmt.Sprintf("Terminal: %d\n", terminal)
 				exportResults += fmt.Sprintf("\nTau: %d - State: %d - Action: %d\n\n", tau, decisions[tau].GetState(), decisions[tau].GetAction())
@@ -233,9 +291,13 @@ func (tb *TreeBackup) Learn(target int) error {
 				}
 				exportResults = ""
 
-				if t + 1 >= terminal {
+				if (t + 1 >= terminal) || rewind {
 					// G = RT
-					totalReturn = rewards[terminal]
+					if rewind {
+						totalReturn = rewards[t + 1]
+					} else {
+						totalReturn = rewards[terminal]
+					}
 					
 					exportResults += fmt.Sprintf("G = %f\n\n", totalReturn)
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
@@ -246,6 +308,7 @@ func (tb *TreeBackup) Learn(target int) error {
 					// G = Rt+1 + gamma * SUM_over_a(pi(a|St+1) * Q(St+1, a))
 					var totalActionValue float64
 
+					exportResults += fmt.Sprintf("Action Weights: %v\n", behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
 					exportResults += fmt.Sprintf("G = %f + %f * (0 ", rewards[t + 1], tb.GetGamma())
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 						return err
@@ -273,7 +336,7 @@ func (tb *TreeBackup) Learn(target int) error {
 				// Loop for k = min(t, T - 1) down through tau + 1
 				k := int(math.Min(float64(t), float64(terminal - 1)))
 				for i := k; i >= tau + 1; i-- {
-					exportResults += fmt.Sprintf("S_%d: %d\n", k, decisions[k].GetState())
+					exportResults += fmt.Sprintf("S_%d: %d\n", i, decisions[i].GetState())
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 						return err
 					}
@@ -281,34 +344,38 @@ func (tb *TreeBackup) Learn(target int) error {
 
 					// G = Rk + gamma * SUM_over_a!=Ak(pi(a|Sk) * Q(Sk, a) + gamma * pi(Ak|Sk) * G)
 					var totalActionValue float64
+					if c, _ := randutil.WeightedChoice(targetPolicy.GetSuggestions()[decisions[i].GetState()]); c.Item == nil {
+						targetPolicy.SetWeight(decisions[i].GetState(), decisions[i].GetAction(), 10)
+					}
 
-					exportResults += fmt.Sprintf("G = %f + %f * (0", rewards[k], tb.GetGamma())
+					exportResults += fmt.Sprintf("Target Weights: %v\n", targetPolicy.GetSuggestions()[decisions[i].GetState()])
+					exportResults += fmt.Sprintf("G = %f + %f * (0", rewards[i], tb.GetGamma())
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 
-					for _, action := range tb.GetYuma().Actions(decisions[k].GetState()) {
-						if action == decisions[k].GetAction() {
+					for _, action := range tb.GetYuma().Actions(decisions[i].GetState()) {
+						if action == decisions[i].GetAction() {
 							continue
 						}
-						weight := float64(targetPolicy.GetWeight(decisions[k].GetState(), action)) / 10.0
-						totalActionValue += float64(weight) * model.At(decisions[k].GetState(), action)
+						weight := float64(targetPolicy.GetWeight(decisions[i].GetState(), action)) / 10.0
+						totalActionValue += float64(weight) * model.At(decisions[i].GetState(), action)
 
-						exportResults += fmt.Sprintf(" + %f * %f", weight, model.At(decisions[k].GetState(), action))
+						exportResults += fmt.Sprintf(" + %f * %f", weight, model.At(decisions[i].GetState(), action))
 						if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 							return err
 						}
 						exportResults = ""
 					}
 
-					exportResults += fmt.Sprintf(") + %f * %f * %f = ", tb.GetGamma(), float64(targetPolicy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0, totalReturn)
+					exportResults += fmt.Sprintf(") + %f * %f * %f = ", tb.GetGamma(), float64(targetPolicy.GetWeight(decisions[i].GetState(), decisions[i].GetAction())) / 10.0, totalReturn)
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 						return err
 					}
 					exportResults = ""
 
-					totalReturn = rewards[k] + tb.GetGamma() * totalActionValue + tb.GetGamma() * (float64(targetPolicy.GetWeight(decisions[k].GetState(), decisions[k].GetAction())) / 10.0) * totalReturn
+					totalReturn = rewards[i] + tb.GetGamma() * totalActionValue + tb.GetGamma() * (float64(targetPolicy.GetWeight(decisions[i].GetState(), decisions[i].GetAction())) / 10.0) * totalReturn
 
 					exportResults += fmt.Sprintf("%f\n\n", totalReturn)
 					if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
@@ -317,13 +384,24 @@ func (tb *TreeBackup) Learn(target int) error {
 					exportResults = ""
 				}
 				// Q(Stau, Atau) = Q(Stau, Atau) + alpha * (G - Q(Stau, Atau))
-				exportResults += fmt.Sprintf("Q_Update = %f + %f * (%f - %f) = ", model.At(decisions[tau].GetState(), decisions[tau].GetAction()), tb.GetAlpha(), totalReturn, model.At(decisions[tau].GetState(), decisions[tau].GetAction()))
+				var qOld float64
+				if totalReturn == (float64(len(tb.GetYuma().GetSubprocesses())) + 1.0) * -1.0 {
+					qOld = totalReturn
+				} else if history != nil {
+					if history.At(decisions[tau].GetState(), decisions[tau].GetAction()) == 0 {
+						qOld = 0.0
+					} else {
+						qOld = model.At(decisions[tau].GetState(), decisions[tau].GetAction())
+					}
+				}
+
+				exportResults += fmt.Sprintf("Q_Update = %f + %f * (%f - %f) = ", qOld, tb.GetAlpha(), totalReturn, qOld)
 				if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 					return err
 				}
 				exportResults = ""
 
-				qUpdate := model.At(decisions[tau].GetState(), decisions[tau].GetAction()) + tb.GetAlpha() * (totalReturn - model.At(decisions[tau].GetState(), decisions[tau].GetAction()))
+				qUpdate := qOld + tb.GetAlpha() * (totalReturn - qOld)
 
 				exportResults += fmt.Sprintf("%f\n\n", qUpdate)
 				if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
@@ -332,9 +410,29 @@ func (tb *TreeBackup) Learn(target int) error {
 				exportResults = ""
 
 				model.Set(decisions[tau].GetState(), decisions[tau].GetAction(), qUpdate)
+				updates.Set(decisions[tau].GetState(), decisions[tau].GetAction(), updates.At(decisions[tau].GetState(), decisions[tau].GetAction()) + 1.0)
 				// If pi is being learned, then ensure that pi(.|Stau) is greedy wrt Q
-				behaviorPolicy.DerivePolicy(model)
-				targetPolicy.DerivePolicy(model)
+				behaviorPolicy.DerivePolicy(model, updates)
+				targetPolicy.DerivePolicy(model, updates)
+			}
+			if rewind {
+				updates.Set(decisions[t].GetState(), decisions[t].GetAction(), updates.At(decisions[t].GetState(), decisions[t].GetAction()) + 1.0)
+				behaviorPolicy.DerivePolicy(model, updates)
+				targetPolicy.DerivePolicy(model, updates)
+
+				c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t].GetState()])
+				action := c.Item.(int)
+				decisions[t].SetAction(action)
+
+				exportResults += fmt.Sprintf("Action Weights: %v\n", behaviorPolicy.GetSuggestions()[decisions[t].GetState()])
+				exportResults += fmt.Sprintf("A_%d: %d\n", t, decisions[t].GetAction())
+				if err = tb.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
+					return err
+				}
+				exportResults = ""
+
+				rewind = false
+				t -= 1
 			}
 			t += 1
 		}
@@ -347,7 +445,7 @@ func (tb *TreeBackup) Learn(target int) error {
 		return err
 	}
 
-	f := mat.Formatted(tb.GetMemory(), mat.Prefix("         "), mat.Squeeze())
+	f := mat.Formatted(memory, mat.Prefix("         "), mat.Squeeze())
 	exportMemory := fmt.Sprintf("\nMemory = %v\n\n\n", f)
 	if err = tb.log(exportMemory, "memory_" + strconv.Itoa(target) + ".txt"); err != nil {
 		return err
@@ -356,13 +454,12 @@ func (tb *TreeBackup) Learn(target int) error {
 	return nil
 }
 
-func (tb *TreeBackup) Solve(target int) []string {
+func (tb *TreeBackup) Solve(target int, model, updates, history, memory *mat.Dense) []string {
 	state := tb.GetYuma().GetStartState()
 	solution := make([]string, 0)
-	model	 := tb.GetYuma().GetModel(target)
 
 	for state & target == 0 {
-		action := tb.ArgMaxAction(model, state)
+		action := tb.ArgMaxAction(model, state, tb.GetYuma().Actions(state))
 		subprocess := tb.GetYuma().GetConfigurations()[action]
 		solution = append(solution, subprocess)
 		state = state | action
@@ -371,31 +468,23 @@ func (tb *TreeBackup) Solve(target int) []string {
 	return solution
 }
 
-func (tb *TreeBackup) initializeQ(q *mat.Dense, target int) {
-	for i := 0; i < int(math.Exp2(float64(len(tb.GetYuma().GetSubprocesses())))); i++ {
-		for j := 0; j < int(math.Exp2(float64(len(tb.GetYuma().GetSubprocesses()) - 1)) + 1); j++ {
-			if i & target != 0 || j == 0 {
-				q.Set(i, j, 0.0)
-			} else {
-				rand.Seed(time.Now().UnixNano())
-				q.Set(i, j, rand.Float64() * -1.0)
-			}
-		}
+func (tb *TreeBackup) initializeState() (int, []string) {
+	if tb.GetRoot() != -1 {
+		return tb.GetRoot(), tb.GetPath()
+	} else {
+		return tb.GetYuma().GetStartState(), make([]string, 0)
 	}
 }
 
-func (tb *TreeBackup) initializeState() (int, []string) {
-	return tb.GetYuma().GetStartState(), make([]string, 0)
-}
-
-func (tb *TreeBackup) initializeMemory() {
-	tb.memory = mat.NewDense(int(math.Exp2(float64(len(tb.GetYuma().GetSubprocesses())))), int(math.Exp2(float64(len(tb.GetYuma().GetSubprocesses()) - 1)) + 1), nil)
-}
-
-func (tb *TreeBackup) ArgMaxAction(q *mat.Dense, state int) int {
+func (tb *TreeBackup) ArgMaxAction(q *mat.Dense, state int, actions []int) int {
 	maxQ := math.MaxFloat64 * -1.0
-	maxAction := 0
-	for _, action := range tb.GetYuma().Actions(state) {
+	tmp := rand.Intn(len(actions) - 0) + 0
+	maxAction := actions[tmp]
+	if q.At(state, maxAction) > maxQ {
+		maxQ = q.At(state, maxAction)
+	}
+	
+	for _, action := range actions {
 		if q.At(state, action) > maxQ {
 			maxQ = q.At(state, action)
 			maxAction = action

@@ -97,7 +97,7 @@ func (ql *QLearning) Learn(target int) error {
 			exportResults = ""
 
 			// Choose A from S using policy derived from Q (e.g., epsilon-greedy)
-			policy.DerivePolicy(model)
+			policy.DerivePolicy(model, nil)
 			c, _ := randutil.WeightedChoice(policy.GetSuggestions()[state])
 			action := c.Item.(int)
 

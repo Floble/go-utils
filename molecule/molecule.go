@@ -2,6 +2,7 @@ package molecule
 
 import (
 	"bufio"
+	"fmt"
 	"go-utils/algorithms/artificialintelligence/agents/yuma"
 	"go-utils/helper"
 	"math"
@@ -165,11 +166,13 @@ func (molecule *Molecule) TakeAction(target int, state int, action int, path []s
 func (molecule *Molecule) test(target int, pathPrefix string, roles []string, lifecycle string) bool {
 	file, err := os.OpenFile("logs_" + strconv.Itoa(target) + ".txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		fmt.Println("MOLECULE - Open File Error")
 		return false
 	}
 	defer file.Close()
 
 	if err := molecule.executor.CreateExecutionOrder(0, "molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml", pathPrefix, roles, lifecycle, "all"); err != nil {
+		fmt.Println("MOLECULE - Create Execution Order Error")
 		return false
 	}
 	
@@ -177,6 +180,7 @@ func (molecule *Molecule) test(target int, pathPrefix string, roles []string, li
 	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
+		fmt.Println("MOLECULE - Command Creation Error")
 		molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 		return false
 	}
@@ -190,6 +194,8 @@ func (molecule *Molecule) test(target int, pathPrefix string, roles []string, li
 	file.WriteString("\n\n")
 
 	if err := cmd.Start(); err != nil {
+		fmt.Println("MOLECULE - Command Start Error")
+		fmt.Println(err)
 		molecule.executor.DeleteExecutionOrder("molecule_" + strconv.Itoa(target) + "/molecule/default/converge.yml")
 		return false
 	}

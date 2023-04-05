@@ -37,11 +37,20 @@ func (rp *RandomPolicy) GetWeight(state int, action int) int {
 	return 0
 }
 
+func (rp *RandomPolicy) SetWeight(state int, action int, weight int) {
+	choices := rp.GetSuggestions()[state]
+	for _, c := range choices {
+		if c.Item == action {
+			c.Weight = weight
+		}
+	}
+}
+
 func (rp *RandomPolicy) SetRationalThinking(rationalThinking RationalThinking) {
 	rp.rationalThinking = rationalThinking
 }
 
-func (rp *RandomPolicy) DerivePolicy(q *mat.Dense) {
+func (rp *RandomPolicy) DerivePolicy(q *mat.Dense, updates *mat.Dense) {
 	for i := 0; i < int(math.Exp2(float64(len(rp.GetRationalThinking().GetYuma().GetSubprocesses())))); i++ {
 		choices := make([]randutil.Choice, 0)
 		for _, action := range rp.GetRationalThinking().GetYuma().Actions(i) {

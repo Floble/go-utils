@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
-	"sync"
 	"strconv"
+	"sync"
+	"time"
+
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -15,6 +17,9 @@ type Yuma struct {
 	environment Environment
 	//models map[int]*mat.Dense
 	models sync.Map
+	memory sync.Map
+	history sync.Map
+	updates sync.Map
 	rationalThinking RationalThinking
 }
 
@@ -50,6 +55,42 @@ func (yuma *Yuma) SetModel(target int, model *mat.Dense) {
 	yuma.models.Store(target, model)
 }
 
+func (yuma *Yuma) GetMemory(target int) *mat.Dense {
+	if memory, ok := yuma.memory.Load(target); ok {
+		return memory.(*mat.Dense)
+	} else {
+		return nil
+	}
+}
+
+func (yuma *Yuma) SetMemory(target int, memory *mat.Dense) {
+	yuma.memory.Store(target, memory)
+}
+
+func (yuma *Yuma) GetHistory(target int) *mat.Dense {
+	if history, ok := yuma.history.Load(target); ok {
+		return history.(*mat.Dense)
+	} else {
+		return nil
+	}
+}
+
+func (yuma *Yuma) SetHistory(target int, history *mat.Dense) {
+	yuma.history.Store(target, history)
+}
+
+func (yuma *Yuma) GetUpdates(target int) *mat.Dense {
+	if updates, ok := yuma.updates.Load(target); ok {
+		return updates.(*mat.Dense)
+	} else {
+		return nil
+	}
+}
+
+func (yuma *Yuma) SetUpdates(target int, updates *mat.Dense) {
+	yuma.updates.Store(target, updates)
+}
+
 func (yuma *Yuma) GetRationalThinking() RationalThinking {
 	return yuma.rationalThinking
 }
@@ -83,6 +124,7 @@ func (yuma *Yuma) SetEnvironment(environment Environment) error {
 	
 	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
 		yuma.models.Store(int(math.Exp2(float64(i))), mat.NewDense(int(math.Exp2(float64(len(yuma.subprocesses)))), int(math.Exp2(float64(len(yuma.subprocesses) - 1)) + 1), nil))
+		yuma.updates.Store(int(math.Exp2(float64(i))), mat.NewDense(int(math.Exp2(float64(len(yuma.subprocesses)))), int(math.Exp2(float64(len(yuma.subprocesses) - 1)) + 1), nil))
 	}
 
 	return nil
@@ -114,7 +156,7 @@ func (yuma *Yuma) Actions(state int) []int {
 	return actions
 }
 
-func (yuma *Yuma) LearnDependenciesAsynchronously() <-chan error {
+/* func (yuma *Yuma) LearnDependenciesAsynchronously() <-chan error {
 	var wg sync.WaitGroup
 	wg.Add(len(yuma.GetSubprocesses()))
 	errs := make(chan error, 1)
@@ -128,14 +170,23 @@ func (yuma *Yuma) LearnDependenciesAsynchronously() <-chan error {
 		target := math.Exp2(float64(i))
 		go func() {
 			defer wg.Done()
-			behaviorPolicy := NewEpsilonGreedyPolicy(0.1)
+			behaviorPolicy := NewNaraEpsilonGreedyPolicy(0.1)
 			targetPolicy := NewGreedyPolicy()
-			rationalThinking := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
-			rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
+			treeBackup := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 1, 0.5, 1, 0)
+			treeBackup.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
+
+			treePolicy := NewEpsilonGreedyPolicy(0.1)
+			selectionPolicy := NewGreedyPolicy()
+			rationalThinking := NewNara(yuma, treeBackup, treePolicy, selectionPolicy, 5 * time.Minute, 1, 1, 0.5)
 			yuma.SetRationalThinking(rationalThinking)
-			behaviorPolicy.SetRationalThinking(rationalThinking)
-			targetPolicy.SetRationalThinking(rationalThinking)
-            yuma.GetRationalThinking().Learn(int(target))
+
+			behaviorPolicy.SetRationalThinking(treeBackup)
+			targetPolicy.SetRationalThinking(treeBackup)
+			treePolicy.SetRationalThinking(rationalThinking)
+			selectionPolicy.SetRationalThinking(rationalThinking)
+
+            //yuma.GetRationalThinking().Learn(int(target))
+			yuma.GetRationalThinking().Solve(int(target))
         }()
 	}
 	wg.Wait()
@@ -146,7 +197,7 @@ func (yuma *Yuma) LearnDependenciesAsynchronously() <-chan error {
 	}
 
 	return errs
-}
+} */
 
 func (yuma *Yuma) LearnDependenciesSequentielly() error {
 	if err := yuma.GetEnvironment().Initialize(); err != nil {
@@ -154,16 +205,56 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 		return err
 	}
 
-	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
-		target := math.Exp2(float64(i))
-		behaviorPolicy := NewEpsilonGreedyPolicy(0.1)
-		targetPolicy := NewGreedyPolicy()
-		rationalThinking := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
-		rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
-		yuma.SetRationalThinking(rationalThinking)
-		behaviorPolicy.SetRationalThinking(rationalThinking)
-		targetPolicy.SetRationalThinking(rationalThinking)
-		yuma.GetRationalThinking().Learn(int(target))
+	for sim := 0; sim < 6; sim++ {
+		fmt.Printf("SIMULATION: %d\n", sim)
+		for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+			target := int(math.Exp2(float64(i)))
+			model := yuma.GetModel(target)
+			updates := yuma.GetUpdates(target)
+			history := yuma.GetHistory(target)
+			memory := yuma.GetMemory(target)
+
+			if sim == 0 {
+				// Initialize Q(s, a) arbitrarily, for all s, a
+				for j := 0; j < int(math.Exp2(float64(len(yuma.GetSubprocesses())))); j++ {
+					for k := 0; k < int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1); k++ {
+						if j & target != 0 || k == 0 {
+							model.Set(j, k, 0.0)
+						} else {
+							model.Set(j, k, (float64(len(yuma.GetSubprocesses())) + 1.0) * -1.0)
+						}
+					}
+				}
+				updates = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+				history = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+				memory = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+			}
+
+			//behaviorPolicy := NewNegatedEpsilonGreedyPolicy(0.1)
+			//behaviorPolicy := NewHistoricPolicy()
+			behaviorPolicy := NewNaraEpsilonGreedyPolicy(0.1)
+			targetPolicy := NewNaraGreedyPolicy()
+			treeBackup := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 1, 0.5, 1, 0)
+			treeBackup.SetN((len(yuma.GetSubprocesses())))
+
+			treePolicy := NewNaraGreedyPolicy()
+			selectionPolicy := NewNaraGreedyPolicy()
+			rationalThinking := NewNara(yuma, treeBackup, treePolicy, selectionPolicy, 5 * time.Minute, 1, 1, 0.5)
+			//rationalThinking := NewNara(yuma, treeBackup, treePolicy, selectionPolicy, memory, nil, 5 * time.Minute, 1, 1, 0.5)
+			yuma.SetRationalThinking(rationalThinking)
+
+			behaviorPolicy.SetRationalThinking(treeBackup)
+			targetPolicy.SetRationalThinking(treeBackup)
+			treePolicy.SetRationalThinking(rationalThinking)
+			selectionPolicy.SetRationalThinking(rationalThinking)
+
+			//yuma.GetRationalThinking().Learn(int(target))
+			eo := yuma.GetRationalThinking().Solve(int(target), model, updates, history, memory)
+			if err := yuma.ExportExecutionOrder(eo, float64(target)); err != nil {
+				fmt.Println("EXPORT EXECUTION ORDER ERROR: " + err.Error())
+				return err
+			}
+		}
 	}
 
 	if err := yuma.GetEnvironment().CleanUp(); err != nil {
@@ -174,7 +265,7 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 	return nil
 }
 
-func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
+/* func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
 	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
 		target := math.Exp2(float64(i))
 		pathExecutionOrder := "playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"
@@ -183,6 +274,15 @@ func (yuma *Yuma) DetermineMinimalExecutionOrder() error {
 		if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(0, pathExecutionOrder, "", mEO, "create", "localhost"); err != nil {
 			return err
 		}
+	}
+
+	return nil
+} */
+
+func (yuma *Yuma) ExportExecutionOrder(eo []string, target float64) error {
+	pathExecutionOrder := "playbook_" + strconv.Itoa(int(target)) + ".yml"
+	if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(0, pathExecutionOrder, "", eo, "create", "localhost"); err != nil {
+		return err
 	}
 
 	return nil

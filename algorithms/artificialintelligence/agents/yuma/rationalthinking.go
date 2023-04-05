@@ -6,8 +6,8 @@ import (
 
 type RationalThinking interface {
 	GetYuma() *Yuma
-	Learn(int) error
-	Solve(int) []string
-	ArgMaxAction(*mat.Dense, int) int
+	Learn(int, *mat.Dense, *mat.Dense, *mat.Dense, *mat.Dense) error
+	Solve(int, *mat.Dense, *mat.Dense, *mat.Dense, *mat.Dense) []string
+	ArgMaxAction(*mat.Dense, int, []int) int
 	log(string, string) error
 }

@@ -8,5 +8,6 @@ import (
 type Policy interface {
 	GetSuggestions() map[int][]randutil.Choice
 	GetWeight(int, int) int
-	DerivePolicy(*mat.Dense)
+	SetWeight(int, int, int)
+	DerivePolicy(*mat.Dense, *mat.Dense)
 }
