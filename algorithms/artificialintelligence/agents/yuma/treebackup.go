@@ -17,6 +17,7 @@ type TreeBackup struct {
 	targetPolicy Policy
 	root int
 	path []string
+	tree []int
 	episodes int
 	alpha float64
 	gamma float64
@@ -75,6 +76,14 @@ func (tb *TreeBackup) GetPath() []string {
 
 func (tb *TreeBackup) SetPath(path []string) {
 	tb.path = path
+}
+
+func (tb *TreeBackup) GetTree() []int {
+	return tb.tree
+}
+
+func (tb *TreeBackup) SetTree(tree []int) {
+	tb.tree = tree
 }
 
 func (tb *TreeBackup) GetEpisodes() int {
@@ -156,8 +165,8 @@ func (tb *TreeBackup) Learn(target int, model, updates, history, memory *mat.Den
 		}
 		state, path := tb.initializeState()
 		// Choose an action A0 arbitrarily as a function of S0; Store A0
-		if history.At(state, target) == 0 {
-			decisions[0] = NewDecision(state, target)
+		if len(tb.GetTree()) > 0 {
+			decisions[0] = NewDecision(state, tb.GetTree()[0])
 		} else {
 			c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[state])
 			action := c.Item.(int)
@@ -259,12 +268,16 @@ func (tb *TreeBackup) Learn(target int, model, updates, history, memory *mat.Den
 					terminal = t + 1
 				} else {
 					// Choose an action At+1 arbitrarily as a function of St+1; Store At+1
-					if history.At(decisions[t + 1].GetState(), target) == 0 {
-						decisions[t + 1].SetAction(target)
+					if len(tb.GetTree()) - 1 >= t + 1 {
+						decisions[t + 1].SetAction(tb.GetTree()[t + 1])
 					} else {
-						c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
-						action := c.Item.(int)
-						decisions[t + 1].SetAction(action)
+						if history.At(decisions[t + 1].GetState(), target) == 0 {
+							decisions[t + 1].SetAction(target)
+						} else {
+							c, _ := randutil.WeightedChoice(behaviorPolicy.GetSuggestions()[decisions[t + 1].GetState()])
+							action := c.Item.(int)
+							decisions[t + 1].SetAction(action)
+						}
 					}
 
 					if reward == -1.0 {

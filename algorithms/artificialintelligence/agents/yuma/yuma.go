@@ -18,6 +18,7 @@ type Yuma struct {
 	//models map[int]*mat.Dense
 	models sync.Map
 	memory sync.Map
+	timestamps sync.Map
 	history sync.Map
 	updates sync.Map
 	rationalThinking RationalThinking
@@ -53,6 +54,18 @@ func (yuma *Yuma) GetModel(target int) *mat.Dense {
 
 func (yuma *Yuma) SetModel(target int, model *mat.Dense) {
 	yuma.models.Store(target, model)
+}
+
+func (yuma *Yuma) GetTimestamps(target int) *mat.Dense {
+	if timestamps, ok := yuma.timestamps.Load(target); ok {
+		return timestamps.(*mat.Dense)
+	} else {
+		return nil
+	}
+}
+
+func (yuma *Yuma) SetTimestamps(target int, timestamps *mat.Dense) {
+	yuma.timestamps.Store(target, timestamps)
 }
 
 func (yuma *Yuma) GetMemory(target int) *mat.Dense {
@@ -205,7 +218,7 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 		return err
 	}
 
-	for sim := 0; sim < 6; sim++ {
+	for sim := 0; sim < 21; sim++ {
 		fmt.Printf("SIMULATION: %d\n", sim)
 		for i := 0; i < len(yuma.GetSubprocesses()); i++ {
 			target := int(math.Exp2(float64(i)))
@@ -232,20 +245,22 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 
 			//behaviorPolicy := NewNegatedEpsilonGreedyPolicy(0.1)
 			//behaviorPolicy := NewHistoricPolicy()
-			behaviorPolicy := NewNaraEpsilonGreedyPolicy(0.1)
+			behaviorPolicy := NewNaraEpsilonGreedyPolicy(0.3)
 			targetPolicy := NewNaraGreedyPolicy()
 			treeBackup := NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 1, 0.5, 1, 0)
 			treeBackup.SetN((len(yuma.GetSubprocesses())))
 
-			treePolicy := NewNaraGreedyPolicy()
+			treePolicy := NewNaraTreePolicy(0.3)
+			expansionPolicy := NewNaraExpansionPolicy()
 			selectionPolicy := NewNaraGreedyPolicy()
-			rationalThinking := NewNara(yuma, treeBackup, treePolicy, selectionPolicy, 5 * time.Minute, 1, 1, 0.5)
+			rationalThinking := NewNara(yuma, treeBackup, treePolicy, expansionPolicy, selectionPolicy, 1 * time.Minute, 1, 0.8, 0.5, 1)
 			//rationalThinking := NewNara(yuma, treeBackup, treePolicy, selectionPolicy, memory, nil, 5 * time.Minute, 1, 1, 0.5)
 			yuma.SetRationalThinking(rationalThinking)
 
 			behaviorPolicy.SetRationalThinking(treeBackup)
 			targetPolicy.SetRationalThinking(treeBackup)
 			treePolicy.SetRationalThinking(rationalThinking)
+			expansionPolicy.SetRationalThinking(rationalThinking)
 			selectionPolicy.SetRationalThinking(rationalThinking)
 
 			//yuma.GetRationalThinking().Learn(int(target))
