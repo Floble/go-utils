@@ -2,18 +2,18 @@ package yuma
 
 import (
 	"math"
+	"sync"
 	"github.com/jmcvetta/randutil"
 	"gonum.org/v1/gonum/mat"
 )
 
 type NaraExpansionPolicy struct {
 	rationalThinking RationalThinking
-	suggestions map[int][]randutil.Choice
+	suggestions sync.Map
 }
 
 func NewNaraExpansionPolicy() *NaraExpansionPolicy {
 	nep := new(NaraExpansionPolicy)
-	nep.suggestions  = make(map[int][]randutil.Choice, 0)
 
 	return nep
 }
@@ -22,12 +22,20 @@ func (nep *NaraExpansionPolicy) GetRationalThinking() RationalThinking {
 	return nep.rationalThinking
 }
 
-func (nep *NaraExpansionPolicy) GetSuggestions() map[int][]randutil.Choice {
-	return nep.suggestions
+func (nep *NaraExpansionPolicy) GetSuggestions(target int) []randutil.Choice {
+	if suggestions, ok := nep.suggestions.Load(target); ok {
+		return suggestions.([]randutil.Choice)
+	} else {
+		return nil
+	}
+}
+
+func (nep *NaraExpansionPolicy) SetSuggestions(target int, suggestions []randutil.Choice) {
+	nep.suggestions.Store(target, suggestions)
 }
 
 func (nep *NaraExpansionPolicy) GetWeight(state int, action int) int {
-	choices := nep.GetSuggestions()[state]
+	choices := nep.GetSuggestions(state)
 	for _, c := range choices {
 		if c.Item == action {
 			return c.Weight
@@ -50,7 +58,7 @@ func (nep *NaraExpansionPolicy) SetWeight(state int, action int, weight int) {
 			}
 			choices = append(choices, c)
 		}
-		nep.suggestions[i] = choices
+		nep.SetSuggestions(i, choices)
 	}
 }
 
@@ -71,6 +79,6 @@ func (nep *NaraExpansionPolicy) DerivePolicy(q *mat.Dense, updates *mat.Dense) {
 			}
 			choices = append(choices, c)
 		}
-		nep.suggestions[i] = choices
+		nep.SetSuggestions(i, choices)
 	}
 }

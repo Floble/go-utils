@@ -110,7 +110,7 @@ func (dql *DoubleQLearning) Learn(target int) error {
 			// Choose A from S using the policy epsilon-greedy in Q1 + Q2
 			model.Add(q1, q2)
 			policy.DerivePolicy(model, nil)
-			c, _ := randutil.WeightedChoice(policy.GetSuggestions()[state])
+			c, _ := randutil.WeightedChoice(policy.GetSuggestions(state))
 			action := c.Item.(int)
 
 			f = mat.Formatted(model, mat.Prefix("        "), mat.Squeeze())
@@ -124,7 +124,7 @@ func (dql *DoubleQLearning) Learn(target int) error {
 			exportResults += "Path: "
 			exportResults += fmt.Sprintln(path)
 			exportResults += "Policy: "
-			exportResults += fmt.Sprintln(dql.GetPolicy().GetSuggestions())
+			exportResults += fmt.Sprintln(dql.GetPolicy().GetSuggestions(state))
 			exportResults += fmt.Sprintf("Action: %d\n", action)
 			if err = dql.log(exportResults, "results.txt"); err != nil {
 				return err

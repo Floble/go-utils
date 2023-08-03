@@ -8,6 +8,7 @@ type Environment interface {
 	GetInstance(int) Instance
 	Initialize() error
 	CleanUp() error
+	CleanResults() error
 	CreateInstance(int, int) error
 	DeleteInstance(int) error
 	TakeAction(int, int, int, []string, bool) (error, bool, float64, int)

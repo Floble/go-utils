@@ -206,7 +206,7 @@ func (ansible *Ansible) stringBuilder(target int, pathPrefix string, host string
 		for i := 0; i < len(roles); i++ {
 			export += "- hosts: " + host + "\n"
 			export += "  vars:\n"
-			export += "  - lifecycle: \"" + lifecycle + "\"\n"
+			export += "    - lifecycle: \"" + lifecycle + "\"\n"
 			err, variables := ansible.DetermineInputs(roles[i])
 			if err == nil && host != "all" {
 				for j := 0; j < len(variables); j++ {

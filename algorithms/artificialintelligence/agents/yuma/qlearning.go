@@ -98,14 +98,14 @@ func (ql *QLearning) Learn(target int) error {
 
 			// Choose A from S using policy derived from Q (e.g., epsilon-greedy)
 			policy.DerivePolicy(model, nil)
-			c, _ := randutil.WeightedChoice(policy.GetSuggestions()[state])
+			c, _ := randutil.WeightedChoice(policy.GetSuggestions(state))
 			action := c.Item.(int)
 
 			exportResults += fmt.Sprintf("State: %d\n", state)
 			exportResults += "Path: "
 			exportResults += fmt.Sprintln(path)
 			exportResults += "Policy: "
-			exportResults += fmt.Sprintln(ql.GetPolicy().GetSuggestions())
+			exportResults += fmt.Sprintln(ql.GetPolicy().GetSuggestions(state))
 			exportResults += fmt.Sprintf("Action: %d\n", action)
 			if err = ql.log(exportResults, "results.txt"); err != nil {
 				return err

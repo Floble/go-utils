@@ -22,9 +22,10 @@ type Nara struct {
 	alpha float64
 	gamma float64
 	omega float64
+	theta time.Duration
 }
 
-func NewNara(yuma *Yuma, treebackup *TreeBackup, treePolicy Policy, expansionPolicy Policy, selectionPolicy Policy, maxTime time.Duration, sigma float64, gamma float64, alpha float64, omega float64) *Nara {
+func NewNara(yuma *Yuma, treebackup *TreeBackup, treePolicy Policy, expansionPolicy Policy, selectionPolicy Policy, maxTime time.Duration, sigma float64, gamma float64, alpha float64, omega float64, theta time.Duration) *Nara {
 	nara := new(Nara)
 	nara.yuma = yuma
 	nara.treebackup = treebackup
@@ -36,6 +37,7 @@ func NewNara(yuma *Yuma, treebackup *TreeBackup, treePolicy Policy, expansionPol
 	nara.gamma = gamma
 	nara.alpha = alpha
 	nara.omega = omega
+	nara.theta = theta
 
 	return nara
 }
@@ -80,11 +82,15 @@ func (nara *Nara) GetOmega() float64 {
 	return nara.omega
 }
 
-func (nara *Nara) Learn(target int, model, updates, history, memory *mat.Dense) error {
+func (nara *Nara) GetTheta() time.Duration {
+	return nara.theta
+}
+
+func (nara *Nara) Learn(target int, model, updates, history, memory *mat.Dense, timestamps *mat.Dense) error {
 	return nil
 }
 
-func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense) []string {
+func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense, timestemps *mat.Dense) []string {
 	solution := make([]string, 0)
 	tree := make([]int, 0)
 	rand.Seed(time.Now().Unix())
@@ -149,8 +155,8 @@ func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense) 
 			}
 			exportResults = ""
 
-			if err := nara.simulation(target, model, updates, history, memory, solution); err != nil {
-				fmt.Println(err)
+			if err := nara.simulation(target, model, updates, history, memory, timestemps, solution); err != nil {
+				fmt.Println("SIMULATION ERROR: " + err.Error())
 				return make([]string, 0)
 			}
 
@@ -159,8 +165,8 @@ func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense) 
 			expansionPolicy.DerivePolicy(model, updates)
 			selectionPolicy.DerivePolicy(model, updates)
 		}
-
-		c, _ := randutil.WeightedChoice(selectionPolicy.GetSuggestions()[state])
+		
+		c, _ := randutil.WeightedChoice(selectionPolicy.GetSuggestions(state))
 		action := c.Item.(int)
 		solution = append(solution, nara.GetYuma().GetConfigurations()[action])
 		state = state | action
@@ -197,6 +203,7 @@ func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense) 
 	}
 
 	nara.GetYuma().SetModel(target, model)
+	nara.GetYuma().SetTimestamps(target, timestemps)
 	nara.GetYuma().SetUpdates(target, updates)
 	nara.GetYuma().SetHistory(target, history)
 	nara.GetYuma().SetMemory(target, memory)
@@ -237,10 +244,10 @@ func (nara *Nara) ArgMaxAction(q *mat.Dense, state int, actions []int) int {
 func (nara *Nara) selection(tree []int, updates *mat.Dense, treePolicy Policy, state int, target int) []int {
 	for state & target == 0 {
 		if (float64(distinctSumOfRow(updates, state)) / float64(len(nara.GetYuma().Actions(state)))) >= nara.GetGamma() {
-			c, _ := randutil.WeightedChoice(treePolicy.GetSuggestions()[state])
+			c, _ := randutil.WeightedChoice(treePolicy.GetSuggestions(state))
 			action := c.Item.(int)
 
-			exportResults := fmt.Sprintf("Selection Weights for state %v: %v\n", state, treePolicy.GetSuggestions()[state])
+			exportResults := fmt.Sprintf("Selection Weights for state %v: %v\n", state, treePolicy.GetSuggestions(state))
 			if err := nara.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 			}
 
@@ -259,10 +266,30 @@ func (nara *Nara) selection(tree []int, updates *mat.Dense, treePolicy Policy, s
 	return tree
 }
 
+/* func (nara *Nara) selection(tree []int, updates *mat.Dense, treePolicy Policy, state int, target int) []int {
+	for state & target == 0 {
+		if (float64(distinctSumOfRow(updates, state)) / float64(len(nara.GetYuma().Actions(state)))) >= nara.GetGamma() {
+			c, _ := randutil.WeightedChoice(treePolicy.GetSuggestions(state))
+			if c.Item != nil {
+				action := c.Item.(int)
+				successor := state | action
+				tree = append(tree, state ^ successor)
+				state = successor
+			} else {
+				break
+			}
+		} else {
+			break
+		}
+	}
+
+	return tree
+} */
+
 func (nara *Nara) expansion(tree []int, expansionPolicy Policy, state int, target int) []int {
 	i := 0
 	for (state & target == 0) && (i < int(nara.GetOmega())) {
-		c, _ := randutil.WeightedChoice(expansionPolicy.GetSuggestions()[state])
+		c, _ := randutil.WeightedChoice(expansionPolicy.GetSuggestions(state))
 		if c.Item != nil {
 			action := c.Item.(int)
 			successor := state | action
@@ -277,7 +304,7 @@ func (nara *Nara) expansion(tree []int, expansionPolicy Policy, state int, targe
 	return tree
 }
 
-func (nara *Nara) simulation(target int, model, updates, history, memory *mat.Dense, solution []string) error {
+func (nara *Nara) simulation(target int, model, updates, history, memory, timestamps *mat.Dense, solution []string) error {
 	leaf := nara.GetYuma().GetStartState()
 	if len(solution) > 0 {
 		for i := 0; i < len(solution); i++ {
@@ -302,7 +329,7 @@ func (nara *Nara) simulation(target int, model, updates, history, memory *mat.De
 		nara.treebackup.SetPath(path)
 	} */
 
-	if err := nara.treebackup.Learn(target, model, updates, history, memory); err != nil {
+	if err := nara.treebackup.Learn(target, model, updates, history, memory, timestamps); err != nil {
 		return err
 	}
 	/* action := nara.GetTreeBackup().ArgMaxAction(model, leaf, nara.GetYuma().Actions(leaf))
@@ -348,16 +375,6 @@ func distinctSumOfRow (matrix *mat.Dense, r int) int {
 		if matrix.At(r, i) >= 1 {
 			sum++
 		}
-	}
-
-	return sum
-}
-
-func sumOfRow (matrix *mat.Dense, r int) float64 {
-	_, c := matrix.Dims()
-	sum := 0.0
-	for i := 0; i < c; i++ {
-		sum += matrix.At(r, i)
 	}
 
 	return sum

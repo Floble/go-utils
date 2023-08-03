@@ -74,6 +74,27 @@ func (molecule *Molecule) CleanUp() error {
 	return nil
 }
 
+func (molecule *Molecule) CleanResults() error {
+	for i := 0; i < len(molecule.GetYuma().GetSubprocesses()); i++ {
+		if _, err := os.Stat("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err == nil {
+			if err := os.Remove("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+				return err
+			}
+		}
+		if err := os.Remove("memory_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+			return err
+		}
+		if err := os.Remove("playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"); err != nil {
+			return err
+		}
+		if err := os.Remove("results_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (molecule *Molecule) CreateInstance(target int, waitingTime int) error {
 	cmd := exec.Command("molecule", "create")
 	cmd.Dir = "molecule_" + strconv.Itoa(target)

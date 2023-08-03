@@ -2,19 +2,19 @@ package yuma
 
 import (
 	"math"
+	"sync"
 	"github.com/jmcvetta/randutil"
 	"gonum.org/v1/gonum/mat"
 )
 
 type NaraEpsilonGreedyPolicy struct {
 	rationalThinking RationalThinking
-	suggestions map[int][]randutil.Choice
+	suggestions sync.Map
 	epsilon float64
 }
 
 func NewNaraEpsilonGreedyPolicy(epsilon float64) *NaraEpsilonGreedyPolicy {
 	negp := new(NaraEpsilonGreedyPolicy)
-	negp.suggestions  = make(map[int][]randutil.Choice, 0)
 	negp.epsilon = epsilon
 
 	return negp
@@ -24,12 +24,20 @@ func (negp *NaraEpsilonGreedyPolicy) GetRationalThinking() RationalThinking {
 	return negp.rationalThinking
 }
 
-func (negp *NaraEpsilonGreedyPolicy) GetSuggestions() map[int][]randutil.Choice {
-	return negp.suggestions
+func (negp *NaraEpsilonGreedyPolicy) GetSuggestions(target int) []randutil.Choice {
+	if suggestions, ok := negp.suggestions.Load(target); ok {
+		return suggestions.([]randutil.Choice)
+	} else {
+		return nil
+	}
+}
+
+func (negp *NaraEpsilonGreedyPolicy) SetSuggestions(target int, suggestions []randutil.Choice) {
+	negp.suggestions.Store(target, suggestions)
 }
 
 func (negp *NaraEpsilonGreedyPolicy) GetWeight(state int, action int) int {
-	choices := negp.GetSuggestions()[state]
+	choices := negp.GetSuggestions(state)
 	for _, c := range choices {
 		if c.Item == action {
 			return c.Weight
@@ -40,7 +48,7 @@ func (negp *NaraEpsilonGreedyPolicy) GetWeight(state int, action int) int {
 }
 
 func (negp *NaraEpsilonGreedyPolicy) SetWeight(state int, action int, weight int) {
-	choices := negp.GetSuggestions()[state]
+	choices := negp.GetSuggestions(state)
 	for _, c := range choices {
 		if c.Item == action {
 			c.Weight = weight
@@ -85,12 +93,12 @@ func (negp *NaraEpsilonGreedyPolicy) DerivePolicy(q *mat.Dense, updates *mat.Den
 			}
 			choices = append(choices, c)
 		}
-		negp.suggestions[i] = choices
+		negp.SetSuggestions(i, choices)
 	}
 }
 
 func (negp *NaraEpsilonGreedyPolicy) getActionWeight(state int, action int) int {
-	actions := negp.GetSuggestions()[state]
+	actions := negp.GetSuggestions(state)
 	for _, a := range actions {
 		if a.Item.(int) == action {
 			return a.Weight

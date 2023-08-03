@@ -2,18 +2,18 @@ package yuma
 
 import (
 	"math"
+	"sync"
 	"github.com/jmcvetta/randutil"
 	"gonum.org/v1/gonum/mat"
 )
 
 type NaraGreedyPolicy struct {
 	rationalThinking RationalThinking
-	suggestions map[int][]randutil.Choice
+	suggestions sync.Map
 }
 
 func NewNaraGreedyPolicy() *NaraGreedyPolicy {
 	ngp := new(NaraGreedyPolicy)
-	ngp.suggestions  = make(map[int][]randutil.Choice, 0)
 
 	return ngp
 }
@@ -22,12 +22,20 @@ func (ngp *NaraGreedyPolicy) GetRationalThinking() RationalThinking {
 	return ngp.rationalThinking
 }
 
-func (ngp *NaraGreedyPolicy) GetSuggestions() map[int][]randutil.Choice {
-	return ngp.suggestions
+func (ngp *NaraGreedyPolicy) GetSuggestions(target int) []randutil.Choice {
+	if suggestions, ok := ngp.suggestions.Load(target); ok {
+		return suggestions.([]randutil.Choice)
+	} else {
+		return nil
+	}
+}
+
+func (ngp *NaraGreedyPolicy) SetSuggestions(target int, suggestions []randutil.Choice) {
+	ngp.suggestions.Store(target, suggestions)
 }
 
 func (ngp *NaraGreedyPolicy) GetWeight(state int, action int) int {
-	choices := ngp.GetSuggestions()[state]
+	choices := ngp.GetSuggestions(state)
 	for _, c := range choices {
 		if c.Item == action {
 			return c.Weight
@@ -50,7 +58,7 @@ func (ngp *NaraGreedyPolicy) SetWeight(state int, action int, weight int) {
 			}
 			choices = append(choices, c)
 		}
-		ngp.suggestions[i] = choices
+		ngp.SetSuggestions(i, choices)
 	}
 }
 
@@ -87,6 +95,6 @@ func (ngp *NaraGreedyPolicy) DerivePolicy(q *mat.Dense, updates *mat.Dense) {
 			}
 			choices = append(choices, c)
 		}
-		ngp.suggestions[i] = choices
+		ngp.SetSuggestions(i, choices)
 	}
 }

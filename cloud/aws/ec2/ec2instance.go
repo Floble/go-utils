@@ -58,7 +58,7 @@ func (instance *EC2Instance) Create() error {
 	waiter := ec2.NewInstanceRunningWaiter(client)
 
 	runInput := &ec2.RunInstancesInput{
-		ImageId:      aws.String("ami-05f7491af5eef733a"),
+		ImageId:      aws.String("ami-04e601abe3e1a910f"),
 		InstanceType: types.InstanceTypeT2Medium,
 		KeyName: 	  aws.String("Floble"),
 		MinCount:     aws.Int32(1),

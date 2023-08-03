@@ -6,6 +6,8 @@ import (
 	"math"
 	"sync"
 	"time"
+	"os"
+	"strconv"
 )
 
 type EC2 struct {
@@ -64,6 +66,27 @@ func (ec2 *EC2) Initialize() error {
 }
 
 func (ec2 *EC2) CleanUp() error {
+	return nil
+}
+
+func (ec2 *EC2) CleanResults() error {
+	for i := 0; i < len(ec2.GetYuma().GetSubprocesses()); i++ {
+		if _, err := os.Stat("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err == nil {
+			if err := os.Remove("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+				return err
+			}
+		}
+		if err := os.Remove("memory_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+			return err
+		}
+		if err := os.Remove("playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"); err != nil {
+			return err
+		}
+		if err := os.Remove("results_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -138,7 +161,7 @@ func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, suc
 			}
 		}
 
-		if !success && len(path) > 0 && !ec2.executor.Execute(target, "", path, "create", "yuma1") {
+		if !success && len(path) > 0 && !ec2.executor.Execute(target, "", path, "create", "all") {
 			if err := ec2.DeleteInstance(target); err != nil {
 				return err, false, math.MaxFloat64 * -1.0, -1
 			}
@@ -148,7 +171,7 @@ func (ec2 *EC2) TakeAction(target int, state int, action int, path []string, suc
 		roles := make([]string, 0)
 		roles = append(roles, ec2.GetYuma().GetConfigurations()[action])
 
-		if ec2.executor.Execute(target, "", roles, "create", "yuma1") {
+		if ec2.executor.Execute(target, "", roles, "create", "all") {
 			reward = -1.0
 			success = true
 			successor = state | action
