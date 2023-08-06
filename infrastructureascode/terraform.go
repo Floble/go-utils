@@ -2,10 +2,10 @@ package infrastructureascode
 
 import (
 	"go-utils/algorithms/artificialintelligence/agents/yuma"
-	"go-utils/helper"
+	//"go-utils/helper"
 	"math"
 	"os"
-	"fmt"
+	//"fmt"
 	"strconv"
 	"strings"
 )
@@ -56,7 +56,7 @@ func (terraform *Terraform) GetSigma() int {
 	return terraform.sigma
 }
 
-func (terraform *Terraform) Initialize() error {
+/* func (terraform *Terraform) Initialize() error {
 	for i := 0; i < len(terraform.GetYuma().GetSubprocesses()); i++ {
 		if err := helper.CopyDirectory(terraform.GetRepository(), terraform.GetRepository() + "_" + strconv.Itoa(int(math.Exp2(float64(i))))); err != nil {
 			return err
@@ -101,6 +101,10 @@ func (terraform *Terraform) Initialize() error {
 	}
 
 	return nil
+} */
+
+func (terraform *Terraform) Initialize() error {
+	return nil
 }
 
 func (terraform *Terraform) CleanUp() error {
@@ -112,6 +116,27 @@ func (terraform *Terraform) CleanUp() error {
 
 	for i := 0; i < len(terraform.GetYuma().GetSubprocesses()); i++ {
 		if err := os.RemoveAll(strings.Split(terraform.GetExecutor().GetRepository(), "/")[0] + "_" + strconv.Itoa(int(math.Exp2(float64(i))))); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (terraform *Terraform) CleanResults() error {
+	for i := 0; i < len(terraform.GetYuma().GetSubprocesses()); i++ {
+		if _, err := os.Stat("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err == nil {
+			if err := os.Remove("logs_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+				return err
+			}
+		}
+		if err := os.Remove("memory_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
+			return err
+		}
+		if err := os.Remove("playbook_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".yml"); err != nil {
+			return err
+		}
+		if err := os.Remove("results_" + strconv.Itoa(int(math.Exp2(float64(i)))) + ".txt"); err != nil {
 			return err
 		}
 	}

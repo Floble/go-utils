@@ -252,6 +252,10 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 		return err
 	}
 
+	history := mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+	memory := mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+	timestamps := mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+
 	sim := 0
 	i := 0
 	for {
@@ -267,10 +271,10 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 		for i := 0; i < len(yuma.GetSubprocesses()); i++ {
 			target := int(math.Exp2(float64(i)))
 			model := yuma.GetModel(target)
-			timestamps := yuma.GetTimestamps(target)
+			//timestamps := yuma.GetTimestamps(target)
 			updates := yuma.GetUpdates(target)
-			history := yuma.GetHistory(target)
-			memory := yuma.GetMemory(target)
+			//history := yuma.GetHistory(target)
+			//memory := yuma.GetMemory(target)
 
 			if sim == 0 {
 				// Initialize Q(s, a) arbitrarily, for all s, a
@@ -284,9 +288,9 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 					}
 				}
 				updates = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
-				history = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
-				memory = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
-				timestamps = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+				//history = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+				//memory = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
+				//timestamps = mat.NewDense(int(math.Exp2(float64(len(yuma.GetSubprocesses())))), int(math.Exp2(float64(len(yuma.GetSubprocesses()) - 1)) + 1), nil)
 			}
 
 			//behaviorPolicy := NewNegatedEpsilonGreedyPolicy(0.1)
