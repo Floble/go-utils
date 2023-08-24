@@ -83,9 +83,21 @@ func (ql *QLearning) Learn(target int) error {
 		exportResults = ""
 
 		// Initialize S
-		if ql.GetYuma().GetEnvironment().GetInstance(target) != nil {
-			ql.GetYuma().GetEnvironment().DeleteInstance(target)
+		switch ql.GetYuma().GetMode() {
+		case 0:
+			if len(ql.GetYuma().GetEnvironment().GetInstances(target)[0]) >= 1 {
+				ql.GetYuma().GetEnvironment().DeleteInstance(target, 0)
+			}
+		case 1:
+			for i := 0; i < len(ql.GetYuma().GetSubprocesses()); i++ {
+				if instances, ok := ql.GetYuma().GetEnvironment().GetInstances(target)[int(math.Exp2(float64(i)))]; ok {
+					for len(instances) > 0 {
+						ql.GetYuma().GetEnvironment().DeleteInstance(target, int(math.Exp2(float64(i))))
+					}
+				}
+			}
 		}
+
 		state, path := ql.initializeState()
 		// Repeat (for each step of episode until S is target state)
 		for state & target == 0 {

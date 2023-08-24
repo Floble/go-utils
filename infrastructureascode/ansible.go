@@ -69,17 +69,21 @@ func (ansible *Ansible) DeleteExecutionOrder(path string) error {
 	return nil
 }
 
-func (ansible *Ansible) CreateEnvironmentDescription(target int, description interface{}) error {
-	file, err := os.OpenFile("hosts_" + strconv.Itoa(target), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func (ansible *Ansible) CreateEnvironmentDescription(target int, description []string) error {
+	file, err := os.OpenFile("hosts_" + strconv.Itoa(target), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	defer file.Close()
 
 	export := "[Yuma]\n"
-	export += "yuma1 ansible_host=" + fmt.Sprintf("%v", description) + " ansible_user=ubuntu\n\n"
-	export += "[all:vars]\n"
+	for i := 0; i < len(description); i++ {
+		export += "yuma" + strconv.Itoa(i +1) + " ansible_host=" + fmt.Sprintf("%v", description[i]) + " ansible_user=ec2-user\n"
+		//export += "yuma" + strconv.Itoa(i +1) + " ansible_host=" + fmt.Sprintf("%v", description[i]) + " ansible_user=ubuntu\n\n"
+	}
+	export += "\n[all:vars]\n"
 	export += "ansible_python_interpreter=/usr/bin/python3\n"
 	export += "ansible_ssh_common_args='-o StrictHostKeyChecking=no'\n"
 	export += "ansible_ssh_extra_args='-o StrictHostKeyChecking=no'\n"
@@ -93,8 +97,10 @@ func (ansible *Ansible) CreateEnvironmentDescription(target int, description int
 }
 
 func (ansible *Ansible) RemoveEnvironmentDescription(target int) error {
-	if err := os.Remove("hosts_" + strconv.Itoa(target)); err != nil {
-		return err
+	if _, err := os.Stat("hosts_" + strconv.Itoa(target)); err == nil {
+		if err := os.Remove("hosts_" + strconv.Itoa(target)); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -176,7 +182,7 @@ func (ansible *Ansible) Execute(target int, pathPrefix string, roles []string, l
 			fmt.Println("ANSIBLE ERROR: INVENTORY IS MISSING")
 			return false
 		}
-		cmd = exec.Command("ansible-playbook", "-i", "hosts_" + strconv.Itoa(target), "yuma_" + strconv.Itoa(target) + ".yml", "--limit", "yuma1")
+		cmd = exec.Command("ansible-playbook", "-i", "hosts_" + strconv.Itoa(target), "yuma_" + strconv.Itoa(target) + ".yml")
 	} else {
 		cmd = exec.Command("ansible-playbook", "yuma_" + strconv.Itoa(target) + ".yml")
 	}

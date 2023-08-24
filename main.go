@@ -2,7 +2,6 @@ package main
 
 import (
 	//"fmt"
-	//"os"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
@@ -16,7 +15,7 @@ import (
 	//"math"
 	//"gonum.org/v1/gonum/mat"
 	yp "go-utils/algorithms/artificialintelligence/agents/yuma"
-	//"go-utils/molecule"
+	"go-utils/molecule"
 )
 
 func main() {
@@ -420,55 +419,28 @@ func main() {
 
 
 
-	//molecule := molecule.NewMolecule(yuma, ansible, 30, 2)
-	//ec2 := ec2.NewEC2(yuma, ansible, 30, 2)
-	terraform := iac.NewTerraform(yuma, ansible, "modules", 0, 1)
+	molecule := molecule.NewMolecule(yuma, ansible, 30, 2)
+	//ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
+	//terraform := iac.NewTerraform(yuma, ansible, "modules", 0, 1)
 
 
 
-	//policy := yp.NewEpsilonGreedyPolicy(0.1)
-	//behaviorPolicy := yp.NewEpsilonGreedyPolicy(0.1)
-	//behaviorPolicy := yp.NewRandomPolicy()
-	//targetPolicy := yp.NewGreedyPolicy()
-	//rationalThinking := yp.NewDoubleQLearning(yuma, policy, 2000, 0.5, 1)
-	//rationalThinking := yp.NewQLearning(yuma, policy, 1000, 0.5, 1)
-	//rationalThinking := yp.NewTreeBackup(yuma, behaviorPolicy, targetPolicy, 50000, 0.5, 1, 0)
-	//rationalThinking := yp.NewSearch(yuma)
-
-	/* behaviorPolicy.SetRationalThinking(rationalThinking)
-	targetPolicy.SetRationalThinking(rationalThinking) */
-
-
-
-
-	/* if err := yuma.SetEnvironment(molecule); err != nil {
+	if err := yuma.SetEnvironment(molecule); err != nil {
 		fmt.Println(err)
-	} */
+	}
 	/* if err := yuma.SetEnvironment(ec2); err != nil {
 		fmt.Println(err)
 	} */
-	if err := yuma.SetEnvironment(terraform); err != nil {
-		fmt.Println(err)
-	}
-
-
-
-	/* rationalThinking.SetN((len(yuma.GetSubprocesses()) / 2) + 1)
-	yuma.SetRationalThinking(rationalThinking) */
-
-	/* errs := yuma.LearnDependenciesAsynchronously()
-	for i := 0; i < len(errs); i++ {
-		err := <- errs
+	/* if err := yuma.SetEnvironment(terraform); err != nil {
 		fmt.Println(err)
 	} */
+
+
+
 	if err := yuma.LearnDependenciesSequentielly(); err != nil {
 		fmt.Println(err)
 	}
 	/* if err := yuma.LearnDependenciesAsynchronously(); len(err) > 0 {
-		fmt.Println(err)
-	} */
-
-	/* if err := yuma.DetermineMinimalExecutionOrder(); err != nil {
 		fmt.Println(err)
 	} */
 }

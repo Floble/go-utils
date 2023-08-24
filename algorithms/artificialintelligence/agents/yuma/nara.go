@@ -138,7 +138,11 @@ func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense, 
 				}
 			}
 
-			tree = nara.expansion(tree, expansionPolicy, state, target)
+			expansionState := state
+			for _, treeAction := range tree {
+				expansionState = expansionState | treeAction
+			}
+			tree = nara.expansion(tree, expansionPolicy, expansionState, target)
 			exportResults += fmt.Sprintf("Tree (after Expansion): %v\n\n", tree)
 			if err := nara.log(exportResults, "results_" + strconv.Itoa(target) + ".txt"); err != nil {
 				return make([]string, 0)
@@ -159,13 +163,14 @@ func (nara *Nara) Solve(target int, model, updates, history, memory *mat.Dense, 
 				fmt.Println("SIMULATION ERROR: " + err.Error())
 				return make([]string, 0)
 			}
+			nara.GetYuma().GetEnvironment().DeleteAllInstances(target)
 
 			// nara.backup(model, model, tree)
 			treePolicy.DerivePolicy(model, updates)
 			expansionPolicy.DerivePolicy(model, updates)
 			selectionPolicy.DerivePolicy(model, updates)
 		}
-		
+
 		c, _ := randutil.WeightedChoice(selectionPolicy.GetSuggestions(state))
 		action := c.Item.(int)
 		solution = append(solution, nara.GetYuma().GetConfigurations()[action])

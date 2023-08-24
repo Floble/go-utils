@@ -5,11 +5,12 @@ type Environment interface {
 	GetExecutor() Executor
 	GetOmega() int
 	GetSigma() int
-	GetInstance(int) Instance
+	GetInstances(int) map[int][]Instance
 	Initialize() error
 	CleanUp() error
 	CleanResults() error
-	CreateInstance(int, int) error
-	DeleteInstance(int) error
+	CreateInstance(int, int, int) error
+	DeleteInstance(int, int) error
+	DeleteAllInstances(int) error
 	TakeAction(int, int, int, []string, bool) (error, bool, float64, int)
 }

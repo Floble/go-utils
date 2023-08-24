@@ -88,9 +88,21 @@ func (dql *DoubleQLearning) Learn(target int) error {
 		exportResults = ""
 
 		// Initialize S
-		if dql.GetYuma().GetEnvironment().GetInstance(target) != nil {
-			dql.GetYuma().GetEnvironment().DeleteInstance(target)
+		switch dql.GetYuma().GetMode() {
+		case 0:
+			if len(dql.GetYuma().GetEnvironment().GetInstances(target)[0]) >= 1 {
+				dql.GetYuma().GetEnvironment().DeleteInstance(target, 0)
+			}
+		case 1:
+			for i := 0; i < len(dql.GetYuma().GetSubprocesses()); i++ {
+				if instances, ok := dql.GetYuma().GetEnvironment().GetInstances(target)[int(math.Exp2(float64(i)))]; ok {
+					for len(instances) > 0 {
+						dql.GetYuma().GetEnvironment().DeleteInstance(target, int(math.Exp2(float64(i))))
+					}
+				}
+			}
 		}
+
 		state, path := dql.initializeState()
 		// Repeat (for each step of episode until S is target state)
 		for state & target == 0 {

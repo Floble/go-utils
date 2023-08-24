@@ -10,12 +10,13 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
+	"sync"
 )
 
 type Molecule struct {
 	yuma *yuma.Yuma
 	executor yuma.Executor
-	instance yuma.Instance
+	instances sync.Map
 	omega int
 	sigma int
 }
@@ -38,12 +39,20 @@ func (molecule *Molecule) GetExecutor() yuma.Executor {
 	return molecule.executor
 }
 
-func (molecule *Molecule) GetInstance(target int) yuma.Instance {
-	return molecule.instance
+func (molecule *Molecule) GetInstances(target int) map[int][]yuma.Instance {
+	if instances, ok := molecule.instances.Load(target); ok {
+		if instances == nil {
+			return nil
+		} else {
+			return instances.(map[int][]yuma.Instance)
+		}
+	} else {
+		return nil
+	}
 }
 
-func (molecule *Molecule) SetInstance(instance yuma.Instance) {
-	molecule.instance = instance
+func (molecule *Molecule) SetInstances(target int, instances map[int][]yuma.Instance) {
+	molecule.instances.Store(target, instances)
 }
 
 func (molecule *Molecule) GetOmega() int {
@@ -95,7 +104,7 @@ func (molecule *Molecule) CleanResults() error {
 	return nil
 }
 
-func (molecule *Molecule) CreateInstance(target int, waitingTime int) error {
+func (molecule *Molecule) CreateInstance(target int, action int, waitingTime int) error {
 	cmd := exec.Command("molecule", "create")
 	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	if err := cmd.Start(); err != nil {
@@ -108,12 +117,21 @@ func (molecule *Molecule) CreateInstance(target int, waitingTime int) error {
 
 	time.Sleep(time.Duration(waitingTime) * time.Second)
 
-	molecule.SetInstance(NewContainer(""))
+	instances := molecule.GetInstances(target)
+	var tmp []yuma.Instance
+	if tmp, ok := instances[action]; ok {
+		tmp = append(tmp, NewContainer(""))
+	} else {
+		tmp := make([]yuma.Instance, 0)
+		tmp = append(tmp, NewContainer(""))
+	}
+	instances[action] = tmp
+	molecule.SetInstances(target, instances)
 
 	return nil
 }
 
-func (molecule *Molecule) DeleteInstance(target int) error {
+func (molecule *Molecule) DeleteInstance(target int, action int) error {
 	cmd := exec.Command("molecule", "destroy")
 	cmd.Dir = "molecule_" + strconv.Itoa(target)
 	err := cmd.Start()
@@ -126,8 +144,16 @@ func (molecule *Molecule) DeleteInstance(target int) error {
 		return err
 	}
 
-	molecule.SetInstance(nil)
+	instances := molecule.GetInstances(target)
+	tmp := instances[action]
+	tmp = tmp[:len(tmp) - 1]
+	instances[action] = tmp
+	molecule.SetInstances(target, instances)
 
+	return nil
+}
+
+func (molecule *Molecule) DeleteAllInstances(target int) error {
 	return nil
 }
 

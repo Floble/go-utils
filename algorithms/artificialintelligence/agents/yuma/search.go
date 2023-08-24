@@ -104,9 +104,21 @@ func (search *Search) BuildSearchTree(state int, depth int, path []string) error
 		}
 		exportResults = ""
 
-		if search.GetYuma().GetEnvironment().GetInstance(0) != nil {
-			search.GetYuma().GetEnvironment().DeleteInstance(0)
+		switch search.GetYuma().GetMode() {
+		case 0:
+			if len(search.GetYuma().GetEnvironment().GetInstances(0)[0]) >= 1 {
+				search.GetYuma().GetEnvironment().DeleteInstance(0, 0)
+			}
+		case 1:
+			for i := 0; i < len(search.GetYuma().GetSubprocesses()); i++ {
+				if instances, ok := search.GetYuma().GetEnvironment().GetInstances(0)[int(math.Exp2(float64(i)))]; ok {
+					for len(instances) > 0 {
+						search.GetYuma().GetEnvironment().DeleteInstance(0, int(math.Exp2(float64(i))))
+					}
+				}
+			}
 		}
+
 		err, success, _, _ := search.GetYuma().GetEnvironment().TakeAction(0, state, action, path, false)
 		if err != nil {
 			return err

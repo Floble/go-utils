@@ -37,11 +37,11 @@ func (terraform *Terraform) GetExecutor() yuma.Executor {
 	return terraform.executor
 }
 
-func (terraform *Terraform) GetInstance(target int) yuma.Instance {
+func (terraform *Terraform) GetInstances(target int) map[int][]yuma.Instance {
 	return nil
 }
 
-func (terraform *Terraform) SetInstance(instance yuma.Instance) {
+func (terraform *Terraform) SetInstances(target int, instances map[int][]yuma.Instance) {
 }
 
 func (terraform *Terraform) GetRepository() string {
@@ -144,11 +144,15 @@ func (terraform *Terraform) CleanResults() error {
 	return nil
 }
 
-func (terraform *Terraform) CreateInstance(target int, waitingTime int) error {
+func (terraform *Terraform) CreateInstance(target int, action int, waitingTime int) error {
 	return nil
 }
 
-func (terraform *Terraform) DeleteInstance(target int) error {
+func (terraform *Terraform) DeleteInstance(target int, action int) error {
+	return nil
+}
+
+func (terraform *Terraform) DeleteAllInstances(target int) error {
 	return nil
 }
 

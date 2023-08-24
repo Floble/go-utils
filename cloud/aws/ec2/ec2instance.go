@@ -19,7 +19,7 @@ import (
 )
 
 type EC2Instance struct {
-	id, publicIP string
+	id, publicIP, privateIP string
 }
 
 func NewEC2Instance() *EC2Instance {
@@ -58,8 +58,9 @@ func (instance *EC2Instance) Create() error {
 	waiter := ec2.NewInstanceRunningWaiter(client)
 
 	runInput := &ec2.RunInstancesInput{
-		ImageId:      aws.String("ami-04e601abe3e1a910f"),
-		InstanceType: types.InstanceTypeT2Medium,
+		ImageId:      aws.String("ami-03cbad7144aeda3eb"),
+		//ImageId:      aws.String("ami-04e601abe3e1a910f"),
+		InstanceType: types.InstanceTypeT2Xlarge,
 		KeyName: 	  aws.String("Floble"),
 		MinCount:     aws.Int32(1),
 		MaxCount:     aws.Int32(1),
@@ -101,6 +102,7 @@ func (instance *EC2Instance) Create() error {
 
 	instance.SetID(*runResult.Instances[0].InstanceId)
 	instance.SetPublicIP(*describeResult.Reservations[0].Instances[0].PublicIpAddress)
+	instance.SetPrivateIP(*describeResult.Reservations[0].Instances[0].PrivateIpAddress)
 
 	return nil
 }
@@ -202,4 +204,12 @@ func (instance *EC2Instance) SetID(id string) {
 
 func (instance *EC2Instance) SetPublicIP(publicIP string) {
 	instance.publicIP = publicIP
+}
+
+func (instance *EC2Instance) GetPrivateIP() string {
+	return instance.privateIP
+}
+
+func (instance *EC2Instance) SetPrivateIP(privateIP string) {
+	instance.privateIP = privateIP
 }

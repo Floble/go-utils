@@ -164,11 +164,23 @@ func (tb *TreeBackup) Learn(target int, model, updates, history, memory *mat.Den
 		exportResults = ""
 
 		// Initialize and store S0 != terminal
-		if tb.GetYuma().GetEnvironment().GetInstance(target) != nil {
-			if err := tb.GetYuma().GetEnvironment().DeleteInstance(target); err != nil {
-				return err
+		switch tb.GetYuma().GetMode() {
+		case 0:
+			if instances, ok := tb.GetYuma().GetEnvironment().GetInstances(target)[0]; ok {
+				if len(instances) >= 1 {
+					tb.GetYuma().GetEnvironment().DeleteInstance(target, 0)
+				}
+			}
+		case 1:
+			for i := 0; i < len(tb.GetYuma().GetSubprocesses()); i++ {
+				if instances, ok := tb.GetYuma().GetEnvironment().GetInstances(target)[int(math.Exp2(float64(i)))]; ok {
+					for len(instances) > 0 {
+						tb.GetYuma().GetEnvironment().DeleteInstance(target, int(math.Exp2(float64(i))))
+					}
+				}
 			}
 		}
+
 		state, path := tb.initializeState()
 		// Choose an action A0 arbitrarily as a function of S0; Store A0
 		if len(tb.GetTree()) > 0 {

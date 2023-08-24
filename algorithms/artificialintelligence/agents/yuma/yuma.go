@@ -5,12 +5,16 @@ import (
 	"io/ioutil"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+	"os"
+	"bufio"
 	"gonum.org/v1/gonum/mat"
 )
 
 type Yuma struct {
+	mode int
 	subprocesses map[string]int
 	configurations map[int]string
 	environment Environment
@@ -20,15 +24,23 @@ type Yuma struct {
 	timestamps sync.Map
 	history sync.Map
 	updates sync.Map
+	quantities map[int]int
 	rationalThinking RationalThinking
 }
 
 func NewYuma() *Yuma {
 	yuma := new(Yuma)
+	yuma.mode = 0
+
+	yuma.quantities = make(map[int]int, 0)
 	yuma.subprocesses = make(map[string]int, 0)
 	yuma.configurations = make(map[int]string, 0)
 
 	return yuma
+}
+
+func (yuma *Yuma) GetMode() int {
+	return yuma.mode
 }
 
 func (yuma *Yuma) GetSubprocesses() map[string]int {
@@ -103,6 +115,10 @@ func (yuma *Yuma) SetUpdates(target int, updates *mat.Dense) {
 	yuma.updates.Store(target, updates)
 }
 
+func (yuma *Yuma) GetQuantities() map[int]int {
+	return yuma.quantities
+}
+
 func (yuma *Yuma) GetRationalThinking() RationalThinking {
 	return yuma.rationalThinking
 }
@@ -119,7 +135,44 @@ func (yuma *Yuma) identifySubprocesses(path string) error {
 		yuma.GetSubprocesses()[subprocesses[i].Name()] = config
 		yuma.configurations[config] = subprocesses[i].Name()
 	}
+
+	for i := 0; i < len(yuma.GetSubprocesses()); i++ {
+		yuma.GetQuantities()[int(math.Exp2(float64(i)))] = 1
+	}
+	if _, err := os.Stat("roles.cfg"); err == nil {
+		readFile, err := os.Open("roles.cfg")
+		if err != nil {
+			return err
+		} else {
+			fileScanner := bufio.NewScanner(readFile)
+    		fileScanner.Split(bufio.ScanLines)
+			fileLines := make([]string, 0)
+			for fileScanner.Scan() {
+				fileLines = append(fileLines, fileScanner.Text())
+			}
+			if err := yuma.setDistinctMode(fileLines); err != nil {
+				return err
+			}
+		}
+		readFile.Close()
+	}
 	
+	return nil
+}
+
+func (yuma *Yuma) setDistinctMode(fileLines []string) error {
+	yuma.mode = 1
+
+	for _, line := range fileLines {
+		splits := strings.Split(line, ":")
+		quantity, err := strconv.Atoi(strings.TrimSpace(splits[1]))
+		if err != nil {
+			return err
+		}
+
+		yuma.GetQuantities()[yuma.GetSubprocesses()[splits[0]]] = quantity
+	}
+
 	return nil
 }
 

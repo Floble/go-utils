@@ -28,3 +28,21 @@ func (container *Container) Delete() error {
 	// NOT RELEVANT
 	return nil
 }
+
+func (container *Container) GetPublicIP() string {
+	// NOT RELEVANT
+	return ""
+}
+
+func (container *Container) SetPublicIP(publicIP string) {
+	// NOT RELEVANT
+}
+
+func (container *Container) GetPrivateIP() string {
+	// NOT RELEVANT
+	return ""
+}
+
+func (container *Container) SetPrivateIP(privateIP string) {
+	// NOT RELEVANT
+}
