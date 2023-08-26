@@ -1,15 +1,15 @@
 package yuma
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"os"
-	"bufio"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -17,6 +17,8 @@ type Yuma struct {
 	mode int
 	subprocesses map[string]int
 	configurations map[int]string
+	quantities map[int]int
+	solutions map[string][]string
 	environment Environment
 	//models map[int]*mat.Dense
 	models sync.Map
@@ -24,7 +26,6 @@ type Yuma struct {
 	timestamps sync.Map
 	history sync.Map
 	updates sync.Map
-	quantities map[int]int
 	rationalThinking RationalThinking
 }
 
@@ -35,6 +36,7 @@ func NewYuma() *Yuma {
 	yuma.quantities = make(map[int]int, 0)
 	yuma.subprocesses = make(map[string]int, 0)
 	yuma.configurations = make(map[int]string, 0)
+	yuma.solutions = make(map[string][]string, 0)
 
 	return yuma
 }
@@ -113,6 +115,22 @@ func (yuma *Yuma) GetUpdates(target int) *mat.Dense {
 
 func (yuma *Yuma) SetUpdates(target int, updates *mat.Dense) {
 	yuma.updates.Store(target, updates)
+}
+
+func (yuma *Yuma) GetSolutions() map[string][]string {
+	return yuma.solutions
+}
+
+func (yuma *Yuma) GetSolution(target string) []string {
+	if _, ok := yuma.solutions[target]; ok {
+		return yuma.solutions[target]
+	} else {
+		return nil
+	}
+}
+
+func (yuma *Yuma) SetSolution(target string, solution []string) {
+	yuma.solutions[target] = solution
 }
 
 func (yuma *Yuma) GetQuantities() map[int]int {
@@ -368,8 +386,13 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 
 			//yuma.GetRationalThinking().Learn(int(target))
 			eo := yuma.GetRationalThinking().Solve(int(target), model, updates, history, memory, timestamps)
+			yuma.SetSolution(yuma.GetConfigurations()[target], eo)
 			if err := yuma.ExportExecutionOrder(eo, float64(target)); err != nil {
 				fmt.Println("EXPORT EXECUTION ORDER ERROR: " + err.Error())
+				return err
+			}
+			if err := yuma.ExportServiceTree(target); err != nil {
+				fmt.Println("EXPORT SERVICE TREE ERROR: " + err.Error())
 				return err
 			}
 		}
@@ -402,6 +425,25 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 func (yuma *Yuma) ExportExecutionOrder(eo []string, target float64) error {
 	pathExecutionOrder := "playbook_" + strconv.Itoa(int(target)) + ".yml"
 	if err := yuma.GetEnvironment().GetExecutor().CreateExecutionOrder(0, pathExecutionOrder, "", eo, "create", "localhost"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (yuma *Yuma) ExportServiceTree(target int) error {
+	root := NewNode(yuma.GetConfigurations()[target])
+	servicetree := DetermineServiceTree(root, yuma.GetConfigurations()[target], yuma.GetSolutions())
+	export := PrintServiceTree(servicetree, "", "")
+
+	file, err := os.OpenFile("servicetree_" + strconv.Itoa(target), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer file.Close()
+
+	if _, err := file.WriteString(export); err != nil {
 		return err
 	}
 

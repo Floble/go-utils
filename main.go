@@ -1,11 +1,10 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
 	//sorting "go-utils/algorithms/sorting"
 	//string_matching "go-utils/algorithms/string_matching"
 	//datastructs "go-utils/datastructures"
-	"fmt"
 	//search "go-utils/algorithms/artificialintelligence/search"
 	iac "go-utils/infrastructureascode"
 	//orderstatistics "go-utils/algorithms/orderstatistics"
@@ -443,4 +442,69 @@ func main() {
 	/* if err := yuma.LearnDependenciesAsynchronously(); len(err) > 0 {
 		fmt.Println(err)
 	} */
+
+
+
+	//solutions := make(map[string][]string, 0)
+
+	/* solutions["mysql"] = append(solutions["mysql"], "python3")
+	solutions["mysql"] = append(solutions["mysql"], "mysql")
+
+	solutions["python3"] = append(solutions["python3"], "python3")
+
+	solutions["apache2"] = append(solutions["apache2"], "apache2")
+
+	solutions["php"] = append(solutions["php"], "php")
+
+	solutions["phpBB"] = append(solutions["phpBB"], "python3")
+	solutions["phpBB"] = append(solutions["phpBB"], "mysql")
+	solutions["phpBB"] = append(solutions["phpBB"], "php")
+	solutions["phpBB"] = append(solutions["phpBB"], "phpBB") */
+
+	/* solutions["eks"] = append(solutions["eks"], "vpc")
+	solutions["eks"] = append(solutions["eks"], "scg")
+	solutions["eks"] = append(solutions["eks"], "eks")
+
+	solutions["kubeconfig"] = append(solutions["kubeconfig"], "vpc")
+	solutions["kubeconfig"] = append(solutions["kubeconfig"], "scg")
+	solutions["kubeconfig"] = append(solutions["kubeconfig"], "eks")
+	solutions["kubeconfig"] = append(solutions["kubeconfig"], "kubeconfig")
+
+	solutions["onlineboutique"] = append(solutions["onlineboutique"], "vpc")
+	solutions["onlineboutique"] = append(solutions["onlineboutique"], "scg")
+	solutions["onlineboutique"] = append(solutions["onlineboutique"], "eks")
+	solutions["onlineboutique"] = append(solutions["onlineboutique"], "kubeconfig")
+	solutions["onlineboutique"] = append(solutions["onlineboutique"], "onlineboutique")
+
+	solutions["scg"] = append(solutions["scg"], "vpc")
+	solutions["scg"] = append(solutions["scg"], "scg")
+
+	solutions["vpc"] = append(solutions["vpc"], "vpc") */
+
+	/* solutions["deployer"] = append(solutions["deployer"], "deployer")
+
+	solutions["deploymentserver"] = append(solutions["deploymentserver"], "deploymentserver")
+
+	solutions["manager"] = append(solutions["manager"], "manager")
+
+	solutions["peer"] = append(solutions["peer"], "manager")
+	solutions["peer"] = append(solutions["peer"], "peer")
+
+	solutions["searchhead"] = append(solutions["searchhead"], "manager")
+	solutions["searchhead"] = append(solutions["searchhead"], "deployer")
+	solutions["searchhead"] = append(solutions["searchhead"], "searchhead")
+
+	solutions["shccaptain"] = append(solutions["shccaptain"], "manager")
+	solutions["shccaptain"] = append(solutions["shccaptain"], "deployer")
+	solutions["shccaptain"] = append(solutions["shccaptain"], "searchhead")
+	solutions["shccaptain"] = append(solutions["shccaptain"], "shccaptain")
+
+	solutions["universalforwarder"] = append(solutions["universalforwarder"], "manager")
+	solutions["universalforwarder"] = append(solutions["universalforwarder"], "deploymentserver")
+	solutions["universalforwarder"] = append(solutions["universalforwarder"], "universalforwarder") */
+
+	/* root := yp.NewNode("searchhead")
+	servicetree := yp.DetermineServiceTree(root, root.GetSubprocess(), solutions)
+	export := yp.PrintServiceTree(servicetree, "", "")
+	fmt.Println(export) */
 }
