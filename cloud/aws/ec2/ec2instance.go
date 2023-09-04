@@ -213,3 +213,12 @@ func (instance *EC2Instance) GetPrivateIP() string {
 func (instance *EC2Instance) SetPrivateIP(privateIP string) {
 	instance.privateIP = privateIP
 }
+
+func (instance *EC2Instance) GetPort() int {
+	// NOT RELEVANT
+	return -1
+}
+
+func (instance *EC2Instance) SetPort(port int) {
+	// NOT RELEVANT
+}

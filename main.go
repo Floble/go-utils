@@ -14,7 +14,8 @@ import (
 	//"math"
 	//"gonum.org/v1/gonum/mat"
 	yp "go-utils/algorithms/artificialintelligence/agents/yuma"
-	"go-utils/molecule"
+	//"go-utils/molecule"
+	"go-utils/cloud/k8s"
 )
 
 func main() {
@@ -418,21 +419,25 @@ func main() {
 
 
 
-	molecule := molecule.NewMolecule(yuma, ansible, 30, 2)
+	//molecule := molecule.NewMolecule(yuma, ansible, 30, 2)
 	//ec2 := ec2.NewEC2(yuma, ansible, 30, 3)
 	//terraform := iac.NewTerraform(yuma, ansible, "modules", 0, 1)
+	k8s := k8s.NewKubernetes(yuma, ansible, 0, 3)
 
 
 
-	if err := yuma.SetEnvironment(molecule); err != nil {
+	/* if err := yuma.SetEnvironment(molecule); err != nil {
 		fmt.Println(err)
-	}
+	} */
 	/* if err := yuma.SetEnvironment(ec2); err != nil {
 		fmt.Println(err)
 	} */
 	/* if err := yuma.SetEnvironment(terraform); err != nil {
 		fmt.Println(err)
 	} */
+	if err := yuma.SetEnvironment(k8s); err != nil {
+		fmt.Println(err)
+	}
 
 
 

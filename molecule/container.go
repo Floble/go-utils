@@ -46,3 +46,12 @@ func (container *Container) GetPrivateIP() string {
 func (container *Container) SetPrivateIP(privateIP string) {
 	// NOT RELEVANT
 }
+
+func (container *Container) GetPort() int {
+	// NOT RELEVANT
+	return -1
+}
+
+func (container *Container) SetPort(port int) {
+	// NOT RELEVANT
+}

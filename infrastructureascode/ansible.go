@@ -243,6 +243,34 @@ func (ansible *Ansible) DetermineInputs(role string) (error, []string) {
     return nil, inputs
 }
 
+func (ansible *Ansible) DetermineValues(role string) (error, []string) {
+	values := make([]string, 0)
+	
+	filePath := ansible.GetRepository() + role + "/defaults/main.yml"
+    readFile, err := os.Open(filePath)
+    if err != nil {
+		return err, nil
+    }
+
+    fileScanner := bufio.NewScanner(readFile)
+    fileScanner.Split(bufio.ScanLines)
+    var fileLines []string
+  
+    for fileScanner.Scan() {
+        fileLines = append(fileLines, fileScanner.Text())
+    }
+
+    readFile.Close()
+  
+    for _, line := range fileLines {
+        if strings.Contains(line, ":") {
+			values = append(values, strings.Split(line, ":")[1])
+		}
+    }
+
+    return nil, values
+}
+
 func (ansible *Ansible) DetermineOutputs(role string) (error, []string) {
 	outputs := make([]string, 0)
 	

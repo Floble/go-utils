@@ -330,7 +330,7 @@ func (yuma *Yuma) LearnDependenciesSequentielly() error {
 	sim := 0
 	i := 0
 	for {
-		if (sim > 0) && (sim % 20 == 0) {
+		if (sim > 0) && (sim % 5 == 0) {
 			if err := yuma.GetEnvironment().CleanResults(); err != nil {
 				fmt.Println("RESULTS DELETE ERROR: " + err.Error())
 				return err

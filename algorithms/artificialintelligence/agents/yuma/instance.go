@@ -7,4 +7,6 @@ type Instance interface {
 	SetPublicIP(string)
 	GetPrivateIP() string
 	SetPrivateIP(string)
+	GetPort() int
+	SetPort(int)
 }

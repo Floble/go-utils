@@ -8,5 +8,6 @@ type Executor interface {
 	RemoveEnvironmentDescription(int) error
 	Execute(int, string, []string, string, string) bool
 	DetermineInputs(string) (error, []string)
+	DetermineValues(string) (error, []string)
 	DetermineOutputs(string) (error, []string)
 }
